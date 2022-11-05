@@ -18,7 +18,7 @@ library(ggplot2)
 ```
 
 ```{r block}
-(load("~/Desktop/MATHS/Year 3/Diss/stomach_dataset.Rdata")) #change to access via github repository
+(load("stomach_dataset.Rdata")) #change to access via github repository
 #the dataset is already named stom_df
 stom_df
 df <- stom_df %>% transmute(haul_id, latitude, longitude, year, pred_species, pred_weight_g, pred_length_cm, prey_species, prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, no._prey_per_stmch = prey_count / n_stomachs, ppmr) 
