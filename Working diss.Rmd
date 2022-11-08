@@ -1,5 +1,5 @@
 ---
-title: '2.11'
+title: '7.11'
 output: pdf_document
 date: "2022-10-27"
 ---
@@ -50,6 +50,8 @@ PPMR_fixed= df_smaller$pred_weight_g[df_smaller$indiv_prey_weight != 0]
 ```{r indiv_prey_weight v. no. density of prey}
 ggplot(data = df_smaller, aes(indiv_prey_weight, no._prey_per_stmch)) + labs(title = "prey weight v. number of prey per stomach", x="prey weight (g)", y="No. of prey per predator stomach", , caption = "Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded") + geom_point(size=0.75)
 
+print("Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded")
+
 ggplot(data = df_smaller, aes(log(indiv_prey_weight), no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey", caption = "Identifying any 'interesting' looking outputs") + geom_point(size=0.5)
 #Some interesting results --> introduce colours to show ships  
 
@@ -77,10 +79,7 @@ slope <- coef(lm(log(pred_weight_fixed)~log(prey_weight_fixed)))
 slope
 #gives the slope of the log(pred) v. log(prey) line of best fit
 
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight_g))) + geom_point(size=0.5) + labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)", caption = "Using log() to see proportionality of the axes, slope of added line should = PPMR") + stat_smooth (method='lm', se=FALSE)
-
-
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight_g))) + labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)", caption = "Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect.") + geom_point(size=0.2) + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5)) + stat_smooth(method='lm', se=FALSE)
+ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight_g))) + labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)", caption = "Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect.") + geom_point(size=0.2) + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 2))
 
 ggplot(data=df_smaller, aes(log(pred_weight_g), log(ppmr))) + geom_point(size=0.5) + labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)", caption = "The slope is not =1, so the PPMR is indept. of pred. mass (as desired)") + stat_smooth (method='lm', se=FALSE)
 
@@ -106,11 +105,11 @@ ggplot(data = df_smaller, aes(x=log(ppmr))) + labs(title = "Histogram: log(PPMR)
 ggplot(data = df_smaller, aes(x=log(ppmr), y=no._prey_per_stmch), group=1) + labs(title = "Scatter plot: log(PPMR) v. number density of prey separated by species", x="log(PPMR)", y="No. prey per stomach", caption = "looking for the most common PPMR for each individual species") + geom_point(size=0.2, colour="red") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5))
 
 #Changed into a density plot
-ggplot(data = df_smaller, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. number of observations, separated by species", x="log(PPMR)", y="No. density of prey", caption = "same idea as above but using a histogram to show most common PPMR per species in a clearer way - the most common should be the one with the single largest bar") + geom_histogram(binwidth=.5, colour="blue", fill="white") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5))
+ggplot(data = df_smaller, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. number of observations, separated by species", x="log(PPMR)", y="No. observations", caption = "same idea as above but using a histogram to show most common PPMR per species in a clearer way - the most common should be the one with the single largest bar") + geom_histogram(binwidth=.5, colour="blue", fill="white") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5))
 
 first_species <- df_smaller %>% filter(pred_species == fixed("Clupea harengus"))
 #separate data set of a single species
 
-ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. number density of prey separated by species - Clupea harengus", x="log(PPMR)", y="No. density of prey") + geom_histogram(binwidth=.5, colour="black", fill="white") + theme(plot.title = element_text(size=15))
+ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. no. of observations: Clupea harengus", x="log(PPMR)", y="No. observations") + geom_histogram(binwidth=.5, colour="black", fill="white") + theme(plot.title = element_text(size=15))
 ```
 
