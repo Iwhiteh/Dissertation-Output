@@ -1,0 +1,114 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{pdfpages}
+\usepackage{amsmath}
+\usepackage[
+    backend=biber,
+    style=authoryear]
+    {biblatex}
+\usepackage[margin=1.6in]{geometry}
+\usepackage{soul}
+
+\title{Predator-Prey Mass Ratios in Ecological Pyramids (and fitting mixed effects models to datasets)}
+\author{Imogen Whitehead}
+\date{November 2022}
+
+\addbibresource{reference.bib}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\subsection{What is PPMR}
+
+Usually, larger sized predators will feed on prey of a smaller mass [\cite{barnes2010}]. It is biologically reasonable to assume that predators do not consume prey that have too large a biomass due to physical constraints on feeding (e.g. size of the predator's head may prevent them from eating especially large prey, known as 'Gape Limit' [\cite{webb1993}]). Also, it is reasonable to assume that predators are unlikely to ingest prey that are sufficiently small because of their low nutritional value for the effort taken to catch and digest them [\cite{tsai2016}].
+
+The Predator-Prey body Mass Ratio (PPMR) is a useful ratio to help understand the most frequently ingested type of prey for a certain species or individual predator. In general terms [\cite{nakazawa2011}], 
+
+$$\text{Individual Predator PPMR} = \frac{\text{Mass of an individual predator}}{\text{mean mass of prey individuals consumed by a predator individual}}$$
+
+Specifically, the PPMR is a measure of the magnitude by which the predator is larger than its prey [\cite{tsai2016}], and is uniquely found for each recorded predator.  It is calculated using information about the mass of the predator and the summed mass of all the prey found in the stomach, along with information about the number of each prey which are found. The PPMR can be calculated by referencing either the prey abundance in terms of biomass of numbers (the equations to calculate these will be referenced and explained later). 
+
+\hl{define prey abundance?}
+
+\subsection{Assumptions about the PPMR}
+
+It is assumed that the PPMR is different for each species [], and the distribution of PPMR for a specific species of predator can be found by plotting the log(PPMR) against the number of observations recorded (separated by species). For example, by just analysing the species 'Clupea harengus', the most commonly recorded PPMR is located at [].
+
+$$ log(PPMR) = 7 \Rightarrow e^7 = 1096 \Rightarrow PPMR = 1096 $$
+
+Hence, the approximated PPMR for the Clupea Harengus species is 1096, i.e. the Clupea Harengus has a preference for prey which have a mass 1096 times smaller than the mass of the predator.
+
+\includepdf[pages=15]{Working-diss.pdf}
+
+Also, it is assumed that the PPMR is independent of the predator mass [\cite{tsai2016}]. By plotting log(predator mass) against log(PPMR), we can show that if the slope of this plot is not equal to 1 then PPMR is not dependent on the predator mass.
+
+\hl{Explain more and find references for}
+
+\includepdf[pages=10]{Working-diss.pdf}
+
+The y-intercept of this graph is -8.802959e-14, and the slope (found by plotting a linear model, i.e. approximating where y~x) is 1. Therefore: [].
+
+\hl{What is the conclusion here?}
+
+\subsection{Factors affecting the PPMR}
+
+\begin{itemize}
+    \item Prey abundance (food preference v. actual availability of food)
+    \item Digestion rates of different fish
+    \item Time and location of data points taken
+\end{itemize}
+
+\hl{Expand on these factors further}
+
+One solution to these factors is to use a mixed effects model, which will be discussed later.
+
+\subsection{Calculating PPMR using Prey Abundance in Numbers} \label{1.4}
+
+Let $M_i$ denote the mass of some predator $i$, and $m_j$ denote the mass of the individual $j = 1, . . . , n$ prey which are observed in the stomach of predator $i$.
+Then, the PPMR using prey abundance in numbers [\cite{Reum19}] is:
+
+$$ r^{num}_{i} = \frac{1}{n} \Sigma^{n}_{j=1} \frac{M_i}{m_j} $$
+
+\hl{Make sigma bigger in the eqn.; label eqns.; for our data set there are multiple of the same fish in one stomach, so how to account for this?}
+
+\subsection{Calculation PPMR using Prey Abundance in terms of prey biomass}
+
+The PPMR can also be defined using the prey abundance in terms of biomass. This is used to recognise the contribution of the prey to some predator's diet in terms of biomass [\cite{Reum19}].
+
+As in Section \ref{1.4}, let $M_{i}$ denote the body mass of some predator $i$ and $m_{j}$ denote the body mass of the individual prey $j = 1, . . . , n$ observed in the stomach of predator $i$. Also, let $w_{i}$ be the total biomass of all the prey found in predator $i$. Then, the PPMR using prey abundance in terms of its biomass [\cite{Reum19}] is (for predator i):
+
+$$r^{bio}_{i} = \Sigma_{j=1}^{n} \frac{M_{i}}{m_{j}} \times \frac{m_{i}}{w_{i}} = \frac{M_{i}}{\Sigma_{j=1}^{n} m_{j}}$$
+
+This is the ratio between predator mass and the average prey mass.
+\hl{what is $m_{i}$?}
+
+For this dissertation, we shall calculate PPMR using: \hl{?}
+
+\section{Diet information}
+
+\subsection{Why is knowing about fish stomach data useful?}
+
+Having detailed information on the contents of a fish's diet \hl{... - find reference papers}.
+
+\section{Mixed effects models}
+
+\subsection{Intro. to mixed effects models and their usage}
+
+A mixed effect model is used for observations lying within nested/hierarchical subgroups within a population [\cite{pinheiro2000}]. A linear model is used for all observations from a single homogeneous group, but subgroups can be used to account for differences from measurements in some group(e.g. for this data set, subgroups are used to account for differences in location and time of data collection).
+
+\section{Data set used}
+
+\subsection{Intro. to the data set used}
+
+https://www.ices.dk/data/data-portals/Pages/Fish-stomach.aspx
+
+\hl{Little intro. to how the data was collected and adjusted}
+
+\section{Bibliography}
+
+\printbibliography
+
+\end{document}
