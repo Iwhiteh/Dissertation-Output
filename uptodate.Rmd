@@ -25,7 +25,7 @@ df <- stom_df %>% transmute(haul_id, latitude, longitude, year, pred_species, pr
 df
 ```
 
-```{r cleaning, message=FALSE, include=FALSE}
+```{r cleaning smaller, message=FALSE, include=FALSE}
 df_smaller <- df[1:5000,]
 #a smaller sample of the overall data set
 
@@ -42,7 +42,7 @@ pred_weight_fixed = df_smaller$pred_weight_g[df_smaller$indiv_prey_weight != 0]
 
 PPMR_fixed= df_smaller$ppmr[df_smaller$indiv_prey_weight != 0]
 
-renamed_df = df_smaller %>% 
+renamed_df_small = df_smaller %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
@@ -62,19 +62,69 @@ renamed_df = df_smaller %>%
   mutate(pred_species = replace(pred_species, pred_species == "Capros apers", "Boarfish"))
 
 
-species_list = ("AHerring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
+species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
+```
+
+```{r cleaning, message=FALSE, include=FALSE}
+any(df$pred_weight_g == 0)
+#any entries satisfy --> output is 'true'
+anyNA(df$pred_weight_g)
+
+any(df$indiv_prey_weight == 0)
+
+prey_weight_fixed = df$indiv_prey_weight[df$indiv_prey_weight != 0]
+#creates a new variable which removes all the prey_weight values which = 0
+
+pred_weight_fixed = df$pred_weight_g[df$indiv_prey_weight != 0]
+
+PPMR_fixed= df$ppmr[df$indiv_prey_weight != 0]
+
+renamed_df = df %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Melanogrammus aeglefinus", "Haddock")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Merlangius merlangus", "Whiting")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trisopterus esmarkii", "Norway Pout")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trisopterus minutus", "Poor Cod")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Merluccius merluccius", "European Hake")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Lophius piscatorius", "Monkfish")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trachurus trachurus", "Horse Mackerel")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Scomber scombrus", "Mackerel")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Limanda limanda", "Common Dab")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Pleuronectes platessa", "Plaice")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Lepidorhombus whiffiagonis", "Megrim")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Solea solea", "Sole")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Capros apers", "Boarfish"))
+
+
+species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
 ```
 
 \newpage
 
 ```{r ave PPMR}
 
-for (a in 1)
-  type = 
-  first_species <- renamed_df %>% filter(pred_species == fixed(type))
-  ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = type, x="log(PPMR)", y="No. density of observations") + geom_density(colour="red") + theme(plot.title = element_text(size=15))
-  
-  
+for (i in 1:length(species_list)){
+  name <- species_list[i]
+  first_species <- renamed_df_small %>% filter(pred_species == fixed(name))
+  print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = name, x="log(PPMR)", y="No. density of observations by number") + geom_density(colour="red") + theme(plot.title = element_text(size=15)))
+  av <- mean(first_species$ppmr)
+  print(paste(name, av))
+}
+
+name <- species_list[1]
+  first_species <- renamed_df %>% filter(pred_species == fixed(name))
+  species_fixed <- first_species[first_species$indiv_prey_weight != 0]
+  print(ggplot(data = first_species, aes(x=log(PPMR_fixed)), group=1) + labs(title = name, x="log(PPMR)", y="No. density of observations by number") + geom_density(colour="red") + theme(plot.title = element_text(size=15)))
+  av <- mean(first_species$PPMR_fixed)
+  print(paste(name, av))
+
+```  
+
+
+```{r ave2PPMR} 
 first_species <- renamed_df %>% filter(pred_species == fixed("Herring"))
 #separate data set of a single species
 
