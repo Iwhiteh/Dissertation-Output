@@ -119,14 +119,6 @@ for (i in 1:length(species_list)){
   av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
   print(paste(name, av))
 }
-
-name <- species_list[1]
-  first_species <- renamed_df %>% filter(pred_species == fixed(name))
-  species_fixed <- first_species[first_species$indiv_prey_weight != 0]
-  print(ggplot(data = first_species, aes(x=log(PPMR_fixed)), group=1) + labs(title = name, x="log(PPMR)", y="No. density of observations by number") + geom_density(colour="red") + theme(plot.title = element_text(size=15)))
-  av <- mean(first_species$PPMR_fixed)
-  print(paste(name, av))
-
 ```  
 
 
