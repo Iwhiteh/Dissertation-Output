@@ -1,0 +1,98 @@
+---
+title: 'Individual Species breakdown'
+output: pdf_document
+date: "2022-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE) #doesn't show code or error messages in knit
+```
+
+```{r library, message=FALSE, include=FALSE} 
+#don't print outputs
+library(dplyr)
+library(tidyverse) 
+library(knitr)
+library(readr)
+library(ggplot2)
+```
+
+```{r block, message=FALSE, include=FALSE}
+(load("stomach_dataset.Rdata")) #change to access via github repository
+#the dataset is already named stom_df
+stom_df
+df <- stom_df %>% transmute(haul_id, latitude, longitude, year, pred_species, pred_weight_g, pred_length_cm, prey_species, prey_weight_g, prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, no._prey_per_stmch = prey_count / n_stomachs, ppmr) 
+df
+```
+
+```{r cleaning, message=FALSE, include=FALSE}
+any(df$pred_weight_g == 0)
+#any entries satisfy --> output is 'true'
+anyNA(df$pred_weight_g)
+
+any(df$indiv_prey_weight == 0)
+
+df_fixed <- df[df$indiv_prey_weight != 0, ]
+
+prey_weight_fixed = df_fixed$indiv_prey_weight
+#creates a new variable which removes all the prey_weight values which = 0
+
+pred_weight_fixed = df$pred_weight_g[df$indiv_prey_weight != 0]
+
+PPMR_fixed= df$ppmr[df$indiv_prey_weight != 0]
+
+renamed_df = df_fixed %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Melanogrammus aeglefinus", "Haddock")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Merlangius merlangus", "Whiting")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trisopterus esmarkii", "Norway Pout")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trisopterus minutus", "Poor Cod")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Merluccius merluccius", "European Hake")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Lophius piscatorius", "Monkfish")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Trachurus trachurus", "Horse Mackerel")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Scomber scombrus", "Mackerel")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Limanda limanda", "Common Dab")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Pleuronectes platessa", "Plaice")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Lepidorhombus whiffiagonis", "Megrim")) %>%
+  mutate(pred_species = replace(pred_species, pred_species == "Solea solea", "Sole")) %>% 
+  mutate(pred_species = replace(pred_species, pred_species == "Capros apers", "Boarfish"))
+
+
+species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
+```
+
+Ave PPMR for inidividual species, weighted by prey biomass:
+```{r ave PPMR}
+for (i in 1:length(species_list)){
+  name <- species_list[i]
+  first_species <- renamed_df %>% 
+    filter(pred_species == fixed(name))
+  print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = name, x="log(PPMR)", y="No. density of observations by number") +
+          geom_density(aes(weight = prey_weight_g), colour="red") + 
+          theme(plot.title = element_text(size=15)))
+  av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
+  stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
+  print(paste(name, av, stan_dev))
+}
+``` 
+
+
+Ave PPMR for inidividual species, weighted by number of prey:
+```{r ave2 PPMR}
+for (i in 1:length(species_list)){
+  name <- species_list[i]
+  first_species <- renamed_df %>% 
+    filter(pred_species == fixed(name))
+  print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = name, x="log(PPMR)", y="No. density of observations by number") +
+          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          theme(plot.title = element_text(size=15)))
+  av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
+  stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
+  print(paste(name, av, stan_dev))
+}
+```
