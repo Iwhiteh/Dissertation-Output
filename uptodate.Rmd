@@ -106,8 +106,8 @@ species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whit
 
 \newpage
 
+Ave PPMR for individual species, weighted by prey biomass:
 ```{r ave PPMR}
-
 for (i in 1:length(species_list)){
   name <- species_list[i]
   first_species <- renamed_df %>% 
@@ -117,12 +117,29 @@ for (i in 1:length(species_list)){
           geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15)))
   av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
-  print(paste(name, av))
+  stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
+  print(paste(name, av, stan_dev))
 }
-```  
+``` 
 
 
-```{r ave2PPMR} 
+Ave PPMR for individual species, weighted by number of prey:
+```{r ave2 PPMR}
+for (i in 1:length(species_list)){
+  name <- species_list[i]
+  first_species <- renamed_df %>% 
+    filter(pred_species == fixed(name))
+  print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = name, x="log(PPMR)", y="No. density of observations by number") +
+          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          theme(plot.title = element_text(size=15)))
+  av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
+  stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
+  print(paste(name, av, stan_dev))
+}
+```
+
+```{r ave3PPMR} 
 first_species <- renamed_df %>% filter(pred_species == fixed("Herring"))
 #separate data set of a single species
 
