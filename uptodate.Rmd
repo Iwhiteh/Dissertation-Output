@@ -3,6 +3,7 @@ title: 'Dissertation'
 output: 
   html_document:
     number_sections: true
+    code_folding: hide
 date: "2022-10-27"
 ---
 
@@ -28,7 +29,7 @@ df
 ```
 
 ```{r cleaning smaller, message=FALSE, include=FALSE}
-df_smaller <- df[1:100,]
+df_smaller <- df[1:5000,]
 #a smaller sample of the overall data set
 #to change to bigger df, just rename the bit below
 
@@ -132,6 +133,7 @@ print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) +
           labs(title = "Herring, weighted by prey biomass", x="log(PPMR)", y="No. density of observations") +
           geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15)))
+
 av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
 stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
 print(paste("ave PPMR weighted by prey biomass:", av))
@@ -141,6 +143,7 @@ print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) +
           labs(title = "Herring, weighted by no. of prey", x="log(PPMR)", y="No. density of observations") +
           geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
           theme(plot.title = element_text(size=15)))
+
 av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
 stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
 print(paste("ave PPMR weighted by no. of prey:", av))
@@ -150,16 +153,23 @@ print(paste("standard deviation:", stan_dev))
 
 # prey weight v. number density of prey
 ```{r indiv_prey_weight v. no. density of prey}
-ggplot(data = renamed_df, aes(indiv_prey_weight, no._prey_per_stmch)) + labs(title = "prey weight v. number of prey per stomach", x="prey weight (g)", y="No. of prey per predator stomach") + geom_point(size=0.75)
+ggplot(data = renamed_df, aes(indiv_prey_weight, no._prey_per_stmch)) + 
+  labs(title = "prey weight v. number of prey per stomach", x="prey weight (g)", y="No. of prey per predator stomach") + 
+  geom_point(size=0.75)
 
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey") + geom_point(size=0.5)
+ggplot(data = renamed_df, aes(log(indiv_prey_weight), no._prey_per_stmch)) + 
+  labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey") + 
+  geom_point(size=0.5)
 #Some interesting results --> introduce colours to show ships  
 
 renamed_df$'haul_id_short' <- gsub("\\-.*", "", renamed_df$'haul_id')
 #rename haul_id values -> separate by ship names (e.g. CLYDE) rather than complete id (e.g. CLYDE-1935-6)
 
 #separated by ship names
-ggplot (data = renamed_df, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per stomach", x="log(prey weight)", y="No. prey per stomach") + geom_point(size=.1, colour="red") + facet_wrap(~haul_id_short, scale="free_y") + theme(strip.text = element_text(size = 5))
+ggplot (data = renamed_df, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + 
+  labs(title = "log(prey weight) v. number of prey per stomach", x="log(prey weight)", y="No. prey per stomach") + geom_point(size=.1, colour="red") + 
+  facet_wrap(~haul_id_short, scale="free_y") +
+  theme(strip.text = element_text(size = 5))
 ```
 
 Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded.
@@ -173,35 +183,57 @@ Playing around with data to see any specific correlations; what is the distribut
 # prey weight v. pred weight
 
 ```{r prey weight v. pred weight}
-ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) + geom_point(size=0.5) + labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
+ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) +
+  geom_point(size=0.5) + 
+  labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
 #mass since measured in g
 
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + geom_point(size=0.5) + labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)") + stat_smooth (method='lm', se=FALSE)
+ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + 
+  geom_point(size=0.5) + 
+  labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)") + 
+  stat_smooth (method='lm', se=FALSE)
 
 slope <- coef(lm(log(renamed_df$pred_weight_g)~log(renamed_df$indiv_prey_weight)))
 print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope))
 #second part is intercept -> how to separate?
 
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)") + geom_point(size=0.2, colour="red") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 2))
+ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + 
+  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)") + 
+  geom_point(size=0.2, colour="red") + 
+  facet_wrap(~pred_species, scale="free_y") + 
+  theme(strip.text = element_text(size = 2))
 ```
-<br>
-1. Prey weight v. predator weight -> attempting to find a link between the predator mass and the prey mass
-2. log(prey weight) v. log(pred. weight) ->  using log() to see proportionality of the axes, slope of added line should = PPMR
-3. Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect
+1. Prey weight v. predator weight -> attempting to find a link between the predator mass and the prey mass  
+2. log(prey weight) v. log(pred. weight) ->  using log() to see proportionality of the axes, slope of added line should = PPMR  
+3. Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect  
 
 # pred weight v. ppmr
 ```{r pred weight v. ppmr}
-ggplot(data=renamed_df, aes(log(pred_weight_g), log(ppmr))) + geom_point(size=0.5) + labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + stat_smooth (method='lm', se=FALSE)
+ggplot(data=renamed_df, aes(log(pred_weight_g), log(ppmr))) + 
+  geom_point(size=0.5) + 
+  labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
+  stat_smooth (method='lm', se=FALSE)
 
 slope2 <- coef(lm(log(renamed_df$ppmr)~log(renamed_df$pred_weight_g)))
 print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit:", slope2))
 #slope of the above plot
 
-#ADD BITS
+ggplot(data=renamed_df, aes(log(pred_weight_g), log(ppmr))) + 
+  geom_point(size=0.5) +
+  labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + stat_smooth (method='lm', se=FALSE) + 
+  facet_wrap(~pred_species, scale="free_y") + 
+  stat_smooth(method='lm', se=FALSE)
+
+#for (i in 1:length(species_list)){
+ # name <- species_list[i]
+  #first_species <- renamed_df %>% 
+   # filter(pred_species == fixed(name))
+#  grad <- coef(lm(log(first_species$ppmr)~log(first_species$pred_weight_g)), na.rm=TRUE)
+ # print(paste(name, grad)) 
+#}
 ```
 log(pred mass) v. log(ppmr) -> is pred. mass related to ppmr? 
 
-We wanting them to not be proportional (i.e. slope = 0).
+We want them to not be proportional (i.e. slope = 0).
 
 CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
-fig.align="center", out.width='100%'
