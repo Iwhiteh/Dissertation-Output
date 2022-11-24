@@ -1,6 +1,6 @@
 ---
 title: '7.11'
-output: pdf_document
+output: html
 date: "2022-10-27"
 ---
 
@@ -29,20 +29,9 @@ df
 df_smaller <- df[1:5000,]
 #a smaller sample of the overall data set
 
-any(df_smaller$pred_weight_g == 0)
-#any entries satisfy --> output is 'true'
-anyNA(df$pred_weight_g)
+df_smaller_fixed <- df_smaller[df_smaller$indiv_prey_weight != 0, ]
 
-any(df_smaller$indiv_prey_weight == 0)
-
-prey_weight_fixed = df_smaller$indiv_prey_weight[df_smaller$indiv_prey_weight != 0]
-#creates a new variable which removes all the prey_weight values which = 0
-
-pred_weight_fixed = df_smaller$pred_weight_g[df_smaller$indiv_prey_weight != 0]
-
-PPMR_fixed= df_smaller$ppmr[df_smaller$indiv_prey_weight != 0]
-
-renamed_df_small = df_smaller %>% 
+renamed_df_small = df_smaller_fixed %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
@@ -73,13 +62,6 @@ anyNA(df$pred_weight_g)
 any(df$indiv_prey_weight == 0)
 
 df_fixed <- df[df$indiv_prey_weight != 0, ]
-
-prey_weight_fixed = df_fixed$indiv_prey_weight
-#creates a new variable which removes all the prey_weight values which = 0
-
-pred_weight_fixed = df$pred_weight_g[df$indiv_prey_weight != 0]
-
-PPMR_fixed= df$ppmr[df$indiv_prey_weight != 0]
 
 renamed_df = df_fixed %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
@@ -113,7 +95,7 @@ for (i in 1:length(species_list)){
   first_species <- renamed_df %>% 
     filter(pred_species == fixed(name))
   print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
-          labs(title = name, x="log(PPMR)", y="No. density of observations by number") +
+          labs(title = name, x="log(PPMR)", y="No. density of observations by prey biomass") +
           geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15)))
   av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
@@ -139,16 +121,27 @@ for (i in 1:length(species_list)){
 }
 ```
 
-```{r ave3PPMR} 
+```{r Herring PPMR} 
 first_species <- renamed_df %>% filter(pred_species == fixed("Herring"))
 #separate data set of a single species
 
-ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. no. of observations: Herring", x="log(PPMR)", y="No. observations") + geom_histogram(binwidth=.5, colour="white") + theme(plot.title = element_text(size=15))
+print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = "Herring, weighted by prey biomass", x="log(PPMR)", y="No. density of observations") +
+          geom_density(aes(weight = prey_weight_g), colour="red") + 
+          theme(plot.title = element_text(size=15)))
+av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
+stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
+print(paste("ave PPMR weighted by prey biomass:", av))
+print(paste("standard deviation:", stan_dev))
 
-ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = "Density plot: log(PPMR) v. no. density of observations: Herring", x="log(PPMR)", y="No. density of observations") + geom_density(colour="red") + theme(plot.title = element_text(size=15))
-
-ggplot(data = first_species, aes(x=log(ppmr), y=), group=1) + labs(title = "Density plot: log(PPMR) v. no. density of observations: Herring", x="log(PPMR)", y="Biomass") + geom_density(colour="red") + theme(plot.title = element_text(size=15))
-
+print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = "Herring, weighted by no. of prey", x="log(PPMR)", y="No. density of observations") +
+          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          theme(plot.title = element_text(size=15)))
+av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
+stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
+print(paste("ave PPMR weighted by no. of prey:", av))
+print(paste("standard deviation:", stan_dev))
 ```
 
 
@@ -157,21 +150,22 @@ ggplot(data = first_species, aes(x=log(ppmr), y=), group=1) + labs(title = "Dens
 ###prey weight v. number density of prey
 
 ```{r indiv_prey_weight v. no. density of prey}
-ggplot(data = df_smaller, aes(indiv_prey_weight, no._prey_per_stmch)) + labs(title = "prey weight v. number of prey per stomach", x="prey weight (g)", y="No. of prey per predator stomach", , caption = "Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded") + geom_point(size=0.75)
+ggplot(data = renamed_df_small, aes(indiv_prey_weight, no._prey_per_stmch)) + labs(title = "prey weight v. number of prey per stomach", x="prey weight (g)", y="No. of prey per predator stomach", , caption = "Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded") + geom_point(size=0.75)
 
 print("Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded")
 
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey", caption = "Identifying any 'interesting' looking outputs") + geom_point(size=0.5)
+ggplot(data = renamed_df_small, aes(log(indiv_prey_weight), no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey", caption = "Identifying any 'interesting' looking outputs") + geom_point(size=0.5)
 #Some interesting results --> introduce colours to show ships  
 
-df_smaller$'haul_id_short' <- gsub("\\-.*", "", df_smaller$'haul_id')
+renamed_df_small$'haul_id_short' <- gsub("\\-.*", "", renamed_df_small$'haul_id')
 #rename haul_id values -> separate by ship names (e.g. CLYDE) rather than complete id (e.g. CLYDE-1935-6)
 
 #separated by ship names
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), no._prey_per_stmch, colour=haul_id_short)) + labs(title = "log(prey weight) v. number of prey per stomach - separate ship names", x="log(prey weight)", y="No.of prey", caption = "Identifying the data points by the boats they were sampled by; shows data lying on a surprsingly nice curve for one of the boats") + geom_point(size=0.5) + theme(plot.title = element_text(size=10))
+ggplot(data = renamed_df_small, aes(log(indiv_prey_weight), no._prey_per_stmch, colour=haul_id_short)) + labs(title = "log(prey weight) v. number of prey per stomach - separate ship names", x="log(prey weight)", y="No.of prey", caption = "Identifying the data points by the boats they were sampled by; shows data lying on a surprsingly nice curve for one of the boats") + geom_point(size=0.5) + theme(plot.title = element_text(size=10))
 
-ggplot (data = df_smaller, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per stomach", x="log(prey weight)", y="No. prey per stomach", caption="Separating the graph for each boat to identify any specifically suspicious data points: note y prop. to e^-x relation for END04, lots of observations for single weights for LANCELOT; lots of the same no. of fish observations for BULLEN") + geom_point(size=.2, colour="red") + facet_wrap(~haul_id_short, scale="free_y") + theme(strip.text = element_text(size = 5))
+ggplot (data = renamed_df_small, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + labs(title = "log(prey weight) v. number of prey per stomach", x="log(prey weight)", y="No. prey per stomach", caption="Separating the graph for each boat to identify any specifically suspicious data points: note y prop. to e^-x relation for END04, lots of observations for single weights for LANCELOT; lots of the same no. of fish observations for BULLEN") + geom_point(size=.2, colour="red") + facet_wrap(~haul_id_short, scale="free_y") + theme(strip.text = element_text(size = 5))
 
+ggplot (data = renamed_df_small, aes(x=log(indiv_prey_weight))) + labs(title = "log(prey weight) v. number of prey per stomach - histogram weighted by no. of prey", x="log(prey weight)", y="No. prey per stomach", caption="Separating the graph for each boat to identify any specifically suspicious data points: note y prop. to e^-x relation for END04, lots of observations for single weights for LANCELOT; lots of the same no. of fish observations for BULLEN") + facet_wrap(~haul_id_short, scale="free_y") + theme(strip.text = element_text(size = 5)) + geom_density(aes(weight = no._prey_per_stmch), colour="red")
 ```
 
 \newpage
@@ -179,22 +173,22 @@ ggplot (data = df_smaller, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) 
 ###prey weight v. pred weight
 
 ```{r prey weight v. pred weight}
-ggplot (data = df_smaller, aes(indiv_prey_weight, pred_weight_g)) + geom_point(size=0.5) + labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)", caption="Attempting to find a link between the predator mass and the prey mass") 
+ggplot (data = renamed_df_small, aes(indiv_prey_weight, pred_weight_g)) + geom_point(size=0.5) + labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)", caption="Attempting to find a link between the predator mass and the prey mass") 
 #mass since measured in g
 
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight_g))) + geom_point(size=0.5) + labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)", caption = "Using log() to see proportionality of the axes, slope of added line should = PPMR") + stat_smooth (method='lm', se=FALSE)
+ggplot(data = renamed_df_small, aes(log(indiv_prey_weight), log(pred_weight_g))) + geom_point(size=0.5) + labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)", caption = "Using log() to see proportionality of the axes, slope of added line should = PPMR") + stat_smooth (method='lm', se=FALSE)
 
-slope <- coef(lm(log(pred_weight_fixed)~log(prey_weight_fixed)))
+slope <- coef(lm(log(pred_weight)~log(prey_weight)))
 slope
 #gives the slope of the log(pred) v. log(prey) line of best fit
 
-ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight_g))) + labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)", caption = "Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect.") + geom_point(size=0.2) + facet_wrap(~pred_species, scale="free_y", ncol=3) + theme(strip.text = element_text(size = 2))
+ggplot(data = renamed_df_small, aes(log(indiv_prey_weight), log(pred_weight_g))) + labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)", caption = "Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect.") + geom_point(size=0.2) + facet_wrap(~pred_species, scale="free_y", ncol=3) + theme(strip.text = element_text(size = 2))
 
-ggplot(data=df_smaller, aes(log(pred_weight_g), log(ppmr))) + geom_point(size=0.5) + labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + stat_smooth (method='lm', se=FALSE)
+ggplot(data=renamed_df_small, aes(log(pred_weight_g), log(ppmr))) + geom_point(size=0.5) + labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + stat_smooth (method='lm', se=FALSE)
                                                                                            
 #caption = "The slope is not =1, so the PPMR is indept. of pred. mass (as desired)")                      
 
-slope2 <- coef(lm(log(PPMR_fixed)~log(pred_weight_fixed)))
+slope2 <- coef(lm(log(PPMR)~log(pred_weight)))
 slope2
 #slope of the above plot
 ```
@@ -204,21 +198,21 @@ slope2
 
 ```{r log(PPMR) v. prey no. density, fig.align="center", out.width='100%'}
 
-ggplot(data = df_smaller, aes(log(ppmr), no._prey_per_stmch)) + labs(title = "Scatter plot: log(PPMR) v. no. of prey per stomach", x="log(PPMR)", y="no. prey per stomach", caption = "Trying to find the most common PPMR over all the fish") + geom_point(size=0.5)
+ggplot(data = renamed_df_small, aes(log(ppmr), no._prey_per_stmch)) + labs(title = "Scatter plot: log(PPMR) v. no. of prey per stomach", x="log(PPMR)", y="no. prey per stomach", caption = "Trying to find the most common PPMR over all the fish") + geom_point(size=0.5)
 #gives the most common PPMR for fish
 
-ggplot(data = df_smaller, aes(x=log(ppmr))) + labs(title = "Histogram: log(PPMR) v. number of observations", x="log(PPMR)", y="No. observations", caption = "no. observation for each value of log(PPMR), i.e. seeing more clearly what the most common PPMR is across all fish species") + geom_histogram(binwidth=.5, colour="black", fill="white")
+ggplot(data = renamed_df_small, aes(x=log(ppmr))) + labs(title = "Histogram: log(PPMR) v. number of observations", x="log(PPMR)", y="No. observations", caption = "no. observation for each value of log(PPMR), i.e. seeing more clearly what the most common PPMR is across all fish species") + geom_histogram(binwidth=.5, colour="black", fill="white")
 #Using a histogram to show total no. of observations (rather than scatter plots)
 
 #CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
 
 #Separated into individual plots for each species -> using facet_wrap for the variable (pred_species)
-ggplot(data = df_smaller, aes(x=log(ppmr), y=no._prey_per_stmch), group=1) + labs(title = "Scatter plot: log(PPMR) v. number density of prey separated by species", x="log(PPMR)", y="No. prey per stomach", caption = "looking for the most common PPMR for each individual species") + geom_point(size=0.2, colour="red") + facet_wrap(~pred_species, scale="free_y", ncol=3) + theme(strip.text = element_text(size = 5))
+ggplot(data = renamed_df_small, aes(x=log(ppmr), y=no._prey_per_stmch), group=1) + labs(title = "Scatter plot: log(PPMR) v. number density of prey separated by species", x="log(PPMR)", y="No. prey per stomach", caption = "looking for the most common PPMR for each individual species") + geom_point(size=0.2, colour="red") + facet_wrap(~pred_species, scale="free_y", ncol=3) + theme(strip.text = element_text(size = 5))
 
 #Changed into a density plot
-ggplot(data = df_smaller, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. number of observations, separated by species", x="log(PPMR)", y="No. observations", caption = "same idea as above but using a histogram to show most common PPMR per species in a clearer way - the most common should be the one with the single largest bar") + geom_histogram(binwidth=.5, colour="blue", fill="white") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5))
+ggplot(data = renamed_df_small, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. number of observations, separated by species", x="log(PPMR)", y="No. observations", caption = "same idea as above but using a histogram to show most common PPMR per species in a clearer way - the most common should be the one with the single largest bar") + geom_histogram(binwidth=.5, colour="blue", fill="white") + facet_wrap(~pred_species, scale="free_y") + theme(strip.text = element_text(size = 5))
 
-first_species <- df_smaller %>% filter(pred_species == fixed("Clupea harengus"))
+first_species <- renamed_df_small %>% filter(pred_species == fixed("Clupea harengus"))
 #separate data set of a single species
 
 ggplot(data = first_species, aes(x=log(ppmr)), group=1) + labs(title = "Histogram: log(PPMR) v. no. of observations: Clupea harengus", x="log(PPMR)", y="No. observations") + geom_histogram(binwidth=.5, colour="black", fill="white") + theme(plot.title = element_text(size=15))
