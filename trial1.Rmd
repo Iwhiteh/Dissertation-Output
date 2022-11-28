@@ -1,0 +1,65 @@
+---
+title: "Stomach - trial 1"
+output: html_document
+date: "2022-10-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(dplyr)
+library(tidyverse) 
+#library(bbmle) 
+#library(mizer) 
+#library(Hmisc) 
+library(knitr)
+library(readr)
+```
+
+```{r block}
+(load("~/Desktop/MATHS/Year 3/Diss/stomach_dataset.Rdata"))
+stom_df #the dataset is already named stom_df
+df <- stom_df %>% transmute(latitude, longitude, year, pred_species, pred_weight = pred_weight_g, prey_species, no._in_stomach=n_stomachs, indiv_prey_weight = prey_ind_weight_g, prey_count, no._prey = prey_count / n_stomachs, total_prey_weight = prey_weight_g, ppmr) 
+df
+```
+
+
+```{r 1st plot}
+ggplot (data = df, aes(indiv_prey_weight, pred_weight)) + geom_point() + labs(title = "Predator v. prey mass plot", x="Prey weight(g)", y="Predator weight (g)")
+
+ggplot(data = df, aes(log(indiv_prey_weight), log(pred_weight))) + geom_point() + labs(title = "Predator v. prey log(mass) plot", x="log(Prey weight)", y="log(Predator weight)") + geom_smooth(method="lm", se = FALSE)
+
+ggplot(data = df, aes(log(ppmr), no._prey)) + labs(title = "PPMR v. number density of prey", x="log(PPMR)", y="No. density of prey") + geom_point()  +geom_smooth()
+
+#how to add a curve of best fit?
+
+ggplot(data = df, aes(log(indiv_prey_weight), no._prey)) + labs(title = "log(prey weight) v. number density of prey", x="log(prey weight)", y="No. density of prey") + geom_point()
+       
+```
+
+
+```{r condensed plot}
+
+df_smaller <- df[1:5000,]
+#a smaller sample of the overall data set
+
+ggplot (data = df_smaller, aes(indiv_prey_weight, pred_weight)) + geom_point() + labs(title = "Predator v. prey mass plot", x="Prey weight(g)", y="Predator weight (g)")
+
+ggplot(data = df_smaller, aes(log(indiv_prey_weight), log(pred_weight))) + geom_point() + labs(title = "Predator v. prey log(mass) plot", x="log(Prey weight)", y="log(Predator weight)") + stat_smooth (method='lm', se=FALSE)
+
+slope <- coef(lm(df_smaller$pred_weight~df_smaller$indiv_prey_weight))
+slope 
+#gives the slope of the log(pred) v. log(prey) line of best fit
+
+ggplot(data = df_smaller, aes(log(ppmr), no._prey)) + labs(title = "log(PPMR) v. number density of prey", x="log(PPMR)", y="No. density of prey") + geom_point()
+
+#how to add a curve of best fit?
+
+ggplot(data = df_smaller, aes(indiv_prey_weight, no._prey)) + labs(title = "prey weight v. number density of prey", x="prey weight", y="No. density of prey") + geom_point()
+
+ggplot(data = df_smaller, aes(log(indiv_prey_weight), no._prey)) + labs(title = "log(prey weight) v. number density of prey", x="log(prey weight)", y="No. density of prey") + geom_point()
+#peak of this curve should give the PPMR
+       
+```
