@@ -19,6 +19,9 @@ library(tidyverse)
 library(knitr)
 library(readr)
 library(ggplot2)
+library(bbmle)
+library(mizer) 
+library(Hmisc)
 ```
 
 ```{r block, message=FALSE, include=FALSE}
@@ -64,7 +67,7 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
 #to change to bigger df, just remove the bit below
 #renamed_df <- renamed_df[1:5000,]
-renamed_df <- renamed_df[sample(nrow(df), 5000), ]
+#renamed_df <- renamed_df[sample(nrow(df), 5000), ]
 ```
 
 # Distribution of prey type eaten for each predator
@@ -183,6 +186,23 @@ av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na
 stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
 print(paste("ave PPMR weighted by no. of prey:", av))
 print(paste("standard deviation:", stan_dev))
+
+
+
+renamed_df = renamed_df %>% mutate(lppmr = log(ppmr))
+#adding a column of log(ppmr) values
+
+herringDF <- renamed_df %>% 
+    filter(pred_species == fixed("Herring"))
+
+herringmean = (mean(herringDF$lppmr))
+#mean is the arithmetic mean of log(ppmr)
+#var is (?)
+
+herringSD = sqrt(var(herringDF$lppmr))
+
+curve(dnorm(x, mean=herringmean, sd=herringSD), 
+      col="darkblue", lwd=2, add=TRUE, yaxt="n")
 ```
 
 
@@ -281,3 +301,4 @@ log(pred mass) v. log(ppmr) -> is pred. mass related to ppmr?
 We want them to not be proportional (i.e. slope = 0).
 
 CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
+
