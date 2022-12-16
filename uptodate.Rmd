@@ -19,17 +19,19 @@ library(tidyverse)
 library(knitr)
 library(readr)
 library(ggplot2)
-#library(bbmle)
+library(bbmle)
 library(mizer) 
 library(Hmisc)
+library(lme4)
 ```
 
 ```{r block, message=FALSE, include=FALSE}
 (load("stomach_dataset.Rdata")) #change to access via github repository
 #the dataset is already named stom_df
 stom_df
-df <- stom_df %>% transmute(haul_id, latitude, longitude, year, pred_species, pred_weight_g, pred_length_cm, prey_species, prey_weight_g, prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, no._prey_per_stmch = prey_count / n_stomachs, ppmr) 
+df <- stom_df %>% transmute(haul_id, latitude, longitude, ices_rectangle, year, pred_species, pred_weight_g, pred_length_cm, prey_species, prey_weight_g, prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, no._prey_per_stmch = prey_count / n_stomachs, ppmr) 
 df
+#ices_rectangle accounts for location of points
 ```
 
 ```{r cleaning smaller, message=FALSE, include=FALSE}
@@ -179,10 +181,11 @@ herringSD = sqrt(var(herringDF$lppmr))
 #var is variance, i.e. ave. distance from each point to the mean
 #mean is the arithmetic mean of log(ppmr)
 
-no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
-no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
-#weighted standard deviation found using the weighted variance
-#mean and standard deviation, weighted by the number of prey
+bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
+bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
+#mean and standard deviation, weighted by the prey biomass
+
+
 
 ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
           labs(title = "Herring, weighted by prey biomass 
@@ -191,10 +194,10 @@ ggplot(data = first_species, aes(x=log(ppmr)), group=1) +
           theme(plot.title = element_text(size=15)) + 
           stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)))
 
-
-bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
-bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
-#mean and standard deviation, weighted by the prey biomass
+no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
+no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
+#weighted standard deviation found using the weighted variance
+#mean and standard deviation, weighted by the number of prey
 
 ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
           labs(title = "Herring, weighted by no. of prey 
@@ -324,9 +327,25 @@ print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit:", spec
  #print(paste(name, grad)) 
 #}
 ```
+
 log(pred mass) v. log(ppmr) -> is pred. mass related to ppmr? 
 
 We want them to not be proportional (i.e. slope = 0).
 
 CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
+
+```{r first mixed effects, echo=TRUE}
+
+lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
+
+lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no._prey_per_stmch) + (1|ices_rectangle), data = renamed_df)
+
+#lmer(fixed ~ (1|random) + linear)
+```
+
+Fixed effect: log(ppmr)
+
+Random effects: haul_id_short, year
+
+Linear fixed effects: pred_species, prey_weight_g
 
