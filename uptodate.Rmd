@@ -126,7 +126,7 @@ for (i in 1:length(species_list)){
           geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15))
   av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
-  stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
+  stan_dev <- sqrt(wtd.var(first_species$ppmr, w = first_speciesF$prey_weight_g, na.rm = TRUE))
   #make standard deviation weighted by prey biomass
   print(paste(name, av, stan_dev))
 }
@@ -154,7 +154,7 @@ for (i in 1:length(species_list)){
           geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
           theme(plot.title = element_text(size=15))
   av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
-  stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
+  stan_dev <- sqrt(wtd.var(first_species$ppmr, w = first_speciesF$no._prey_per_stmch, na.rm = TRUE))
   print(paste(name, av, stan_dev))
 }
 ```
@@ -186,7 +186,6 @@ bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm
 #mean and standard deviation, weighted by the prey biomass
 
 
-
 ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
           labs(title = "Herring, weighted by prey biomass 
                (with a normal distribution, weighted by prey biomass)", x="log(PPMR)",y="Biomass density of observations") +
@@ -206,6 +205,7 @@ ggplot(data = first_species, aes(x=log(ppmr)), group=1) +
           theme(plot.title = element_text(size=15)) +
           stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)))
 ```
+
 Plotting the distribution of Herring log(PPMR) as weighted by prey biomass and number of prey (with weighted normal distribution curves plotted over the top of each).
 
 Prey biomass weighted mean: 6.629177
@@ -252,6 +252,13 @@ for (i in 1:length(haul_list_interesting)){
   geom_point(size=.1, colour="red") +
   theme(strip.text = element_text(size = 5)))
 }
+
+ggplot (data = interesting_haul, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + 
+  labs(title = "hello", x="log(prey weight)", y="No. prey per stomach") + 
+  geom_point(size=.1, colour="red") +
+  theme(strip.text = element_text(size = 5)) + facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
+
+#create new facet_wrap() over: vertical lines, curves, horizontal lines, identical
 
 ```
 
