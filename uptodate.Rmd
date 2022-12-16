@@ -19,7 +19,7 @@ library(tidyverse)
 library(knitr)
 library(readr)
 library(ggplot2)
-library(bbmle)
+#library(bbmle)
 library(mizer) 
 library(Hmisc)
 ```
@@ -72,34 +72,34 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
 # Distribution of prey type eaten for each predator
 ```{r distribution of prey, echo = TRUE}
-#species_list includes Boarfish which doesn't have values, so add 'length()-1'
+#species_list includes Boarfish which doesn't have values, so add 'length()-1' to account for this - i.e. doesn't analyse any Boarfish data because it's nonexistent
 
 prey_type_list <- list("benthos", "fish", "nekton", "other", "zooplankton")
 
 for (i in 1:(length(species_list)-1)){
   b=f=n=o=z=0
-  name <- species_list[i]
-  first_species <- renamed_df %>% filter(renamed_df$pred_species == fixed(name))
-  for(i in 1:length(first_species)){
-    benthos <- first_species[first_species$prey_type == fixed("benthos"),]
-    b <- length(benthos$haul_id)
+  first_species <- renamed_df %>% filter(renamed_df$pred_species == fixed(species_list[i]))
+  
+  benthos <- first_species[first_species$prey_type == fixed("benthos"),]
+  b <- length(benthos$haul_id)
     
-    fish <- first_species[first_species$prey_type == fixed("fish"),]
-    f <- length(fish$haul_id)
+  fish <- first_species[first_species$prey_type == fixed("fish"),]    
+  f <- length(fish$haul_id)
     
-    nekton <- first_species[first_species$prey_type == fixed("nekton"),]
-    n <- length(nekton$haul_id)
+  nekton <- first_species[first_species$prey_type == fixed("nekton"),]
+  n <- length(nekton$haul_id)
     
-    other <- first_species[first_species$prey_type == fixed("other"),]
-    o <- length(other$haul_id)
+  other <- first_species[first_species$prey_type == fixed("other"),]
+  o <- length(other$haul_id)
     
-    zoo <- first_species[first_species$prey_type == fixed("zooplankton"),]
-    z <- length(zoo$haul_id)
-  }
-  x <- c(b,f,n,o,z)
-  pie(x, prey_type_list, main = name)
+  zoo <- first_species[first_species$prey_type == fixed("zooplankton"),]
+  z <- length(zoo$haul_id)
+
+  pie(c(b,f,n,o,z), prey_type_list, main = species_list[i])
 }
+
 ```
+
 These are individual pie charts showing the distribution of the type of prey each predator eats.
 
 
@@ -167,44 +167,50 @@ Prints the mean ppmr, as weighted by number of prey.
 first_species <- renamed_df %>% filter(pred_species == fixed("Herring"))
 #separate data set of a single species
 
-print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
-          labs(title = "Herring, weighted by prey biomass", x="log(PPMR)", y="Biomass density of observations") +
-          geom_density(aes(weight = prey_weight_g), colour="red") + 
-          theme(plot.title = element_text(size=15)))
-
-av <- weighted.mean(first_species$ppmr, w = first_species$prey_weight_g, na.rm = TRUE)
-stan_dev <- sd(first_species$ppmr, na.rm = TRUE)
-print(paste("ave PPMR weighted by prey biomass:", av))
-print(paste("standard deviation:", stan_dev))
-
-print(ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
-          labs(title = "Herring, weighted by no. of prey", x="log(PPMR)", y="No. density of observations") +
-          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
-          theme(plot.title = element_text(size=15)))
-
-av <- weighted.mean(first_species$ppmr, w = first_species$no._prey_per_stmch, na.rm = TRUE)
-stan_dev <- sd(first_species$ppmr,  na.rm = TRUE)
-print(paste("ave PPMR weighted by no. of prey:", av))
-print(paste("standard deviation:", stan_dev))
-
-
-
 renamed_df = renamed_df %>% mutate(lppmr = log(ppmr))
 #adding a column of log(ppmr) values
 
 herringDF <- renamed_df %>% 
     filter(pred_species == fixed("Herring"))
 
-herringmean = (mean(herringDF$lppmr))
-#mean is the arithmetic mean of log(ppmr)
-#var is (?)
-
+herringmean = mean(herringDF$lppmr)
 herringSD = sqrt(var(herringDF$lppmr))
+#these are non-weighted means
+#var is variance, i.e. ave. distance from each point to the mean
+#mean is the arithmetic mean of log(ppmr)
 
-curve(dnorm(x, mean=herringmean, sd=herringSD), 
-      col="darkblue", lwd=2, add=TRUE, yaxt="n")
+no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
+no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
+#weighted standard deviation found using the weighted variance
+#mean and standard deviation, weighted by the number of prey
+
+ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = "Herring, weighted by prey biomass 
+               (with a normal distribution, weighted by prey biomass)", x="log(PPMR)",y="Biomass density of observations") +
+          geom_density(aes(weight = prey_weight_g), colour="red") + 
+          theme(plot.title = element_text(size=15)) + 
+          stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)))
+
+
+bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
+bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
+#mean and standard deviation, weighted by the prey biomass
+
+ggplot(data = first_species, aes(x=log(ppmr)), group=1) + 
+          labs(title = "Herring, weighted by no. of prey 
+               (with a normal distribution, weighted by prey biomass)", x="log(PPMR)", y="No. density of observations") +
+          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          theme(plot.title = element_text(size=15)) +
+          stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)))
 ```
+Plotting the distribution of Herring log(PPMR) as weighted by prey biomass and number of prey (with weighted normal distribution curves plotted over the top of each).
 
+Prey biomass weighted mean: 6.629177
+No. of prey weighted mean: 13.54102
+
+The mean is shifted by 6.911843.
+
+What does this mean?
 
 # prey weight v. number density of prey
 ```{r indiv_prey_weight v. no. density of prey, echo = TRUE}
@@ -218,20 +224,41 @@ ggplot(data = renamed_df, aes(log(indiv_prey_weight), no._prey_per_stmch)) +
 #Some interesting results --> introduce colours to show ships  
 
 renamed_df$'haul_id_short' <- gsub("\\-.*", "", renamed_df$'haul_id')
+renamed_df$'haul_id_short' <- gsub("_", "", renamed_df$'haul_id_short')
 #rename haul_id values -> separate by ship names (e.g. CLYDE) rather than complete id (e.g. CLYDE-1935-6)
 
-#separated by ship names
-ggplot (data = renamed_df, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + 
-  labs(title = "log(prey weight) v. number of prey per stomach", x="log(prey weight)", y="No. prey per stomach") + geom_point(size=.1, colour="red") + 
-  facet_wrap(~haul_id_short, scale="free_y") +
-  theme(strip.text = element_text(size = 5))
+haul_list <- unique(renamed_df$haul_id_short)
+
+interesting_haul <- filter(renamed_df, haul_id_short=='CLYDE'|haul_id_short=='END04'|haul_id_short=='CORY08'|haul_id_short=='LUC'|haul_id_short=='HIDDINK'|haul_id_short=='EXCmacDATSTO815'|haul_id_short=="Excmacdatsto815error")
+
+haul_list_interesting <- unique(interesting_haul$haul_id_short)
+
+#Vertical lines: CLYDE, BLEGVARD, CIROL05, END03, LAST, LUC (*), DUBUIT, HARDY, JOHNSON
+
+#Curves: END04
+
+#Horizontal lines: CORY08, HIDDINK
+
+#Identical: EXCmacDATSTO815, Excmacdatsto815error
+
+#log(prey weight) v. number of prey per stomach - separated by ship names
+for (i in 1:length(haul_list_interesting)){
+  haul_df <- interesting_haul %>% filter(interesting_haul$haul_id_short == fixed(haul_list_interesting[i]))
+  print(ggplot (data = haul_df, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + 
+  labs(title = haul_list_interesting[i], x="log(prey weight)", y="No. prey per stomach") + 
+  geom_point(size=.1, colour="red") +
+  theme(strip.text = element_text(size = 5)))
+}
+
 ```
 
 Playing around with data to see any specific correlations; what is the distribution of the weight of prey recorded.
 
 1. Prey weight v. no. prey per stomach
 2. Log (prey weight) v. no. prey per stomach -> showed some interesting results, so added colours to identify individual ships
-3. Graph 3., but with points from each ship plotted on separate graphs -> note y prop. to e^-x relation for END04, lots of observations for single weights for LANCELOT; lots of the same no. of fish observations for BULLEN
+3. Graph 3., but with points from each ship plotted on separate graphs -> note y prop. to e^-x relation for END04; lots of observations for single weights for LUC; lots of the same no. of fish observations for CORY08 and HIDDINK.
+
+Also, I found that the EXCmacDATSTO815 and Excmacdatsto815error gave exactly the same data (which might need to be considered in later calculations).
 
 
 # prey weight v. pred weight
@@ -255,8 +282,9 @@ ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) +
   labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)") + 
   geom_point(size=0.2, colour="red") + 
   facet_wrap(~pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 2))
+  theme(strip.text = element_text(size = 10))
 ```
+
 1. Prey weight v. predator weight -> attempting to find a link between the predator mass and the prey mass  
 2. log(prey weight) v. log(pred. weight) ->  using log() to see proportionality of the axes, slope of added line should = PPMR  
 3. Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect  
