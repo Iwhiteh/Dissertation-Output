@@ -82,6 +82,8 @@ prey_type <- c("benthos", "fish", "nekton", "other", "zooplankton")
 
 pred_diet_dist[ , prey_type] <- NA
 
+#pred_diet_dist[pred_diet_dist$pred_species == fixed("Herring"),] <- b
+
 #use below for loop to fill in this data frame
 #then, use facet_wrap() to plot multiple pie charts from it
 
@@ -92,7 +94,8 @@ pred_diet_dist[ , prey_type] <- NA
 
 prey_type_list <- list("benthos", "fish", "nekton", "other", "zooplankton")
 
-for (i in 1:(length(species_list)-1)){
+for (i in 1:1){
+       #(length(species_list)-1)){
   b=f=n=o=z=0
   first_species <- renamed_df %>% filter(renamed_df$pred_species == fixed(species_list[i]))
   
@@ -111,7 +114,9 @@ for (i in 1:(length(species_list)-1)){
   zoo <- first_species[first_species$prey_type == fixed("zooplankton"),]
   z <- length(zoo$haul_id)
   
-  pie(c(b,f,n,o,z), prey_type_list, main = species_list[i])
+  pred_diet_dist <- c("Herring", b, f, n, o, z)
+  
+  #pie(c(b,f,n,o,z), prey_type_list, main = species_list[i])
 }
 
 #ggplot(renamed_df, aes(x="", y="abc", fill=prey_type)) +
@@ -360,10 +365,13 @@ CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
 # Introducing a mixed effects model
 
 ```{r first mixed effects, echo=TRUE}
-
 lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
+#fixed: pred_species and prey_weight_g
+#random: haul_id_short
 
 lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no._prey_per_stmch) + (1|ices_rectangle), data = renamed_df)
+#fixed: pred_species and prey_weight_g
+#random: haul_id_short, year, no._prey_per_stmch, ices_rectangle
 
 #lmer(fixed ~ (1|random) + linear)
 ```
