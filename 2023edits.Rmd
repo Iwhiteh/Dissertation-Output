@@ -23,6 +23,7 @@ library(bbmle)
 library(mizer) 
 library(Hmisc)
 library(lme4)
+library(RColorBrewer)
 ```
 
 ```{r block, message=FALSE, include=FALSE}
@@ -67,6 +68,11 @@ species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whit
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
+renamed_df$lppmr <- log(renamed_df$ppmr)
+#adding a column of log(ppmr) values
+renamed_df$lprey_weight <- log(renamed_df$indiv_prey_weight)
+renamed_df$lpred_weight <- log(renamed_df$pred_weight_g)
+
 #to change to bigger df, just remove the bit below
 #renamed_df <- renamed_df[1:5000,]
 #renamed_df <- renamed_df[sample(nrow(df), 5000), ]
@@ -78,22 +84,30 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   geom_bar(stat="count", width=0.7) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
-  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) 
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())  +
+  scale_fill_brewer(palette = "Dark2")
 
 #'theme()' removes any words on the x-axis so the graphs are easier to understand
-
+#scale_fill_brewer means the colours are easy to distinguish between
 ```
 
 These are individual bar charts showing the distribution of the type of prey each predator eats.
 
+Benthos: organisms that live on/near the bottom of a body of water
+Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers)
+Nekton: the actively swimming aquatic organisms
+Other: misc. types that don't fit into the other categories
+Zooplankton: animal plankton (plankton are aquatic organisms that are unable to swim effectively against currents)
+
 # Ave PPMR for individual species, weighted by prey biomass:
 ```{r ave PPMR biomass, echo = TRUE}
 #Separated into individual plots for each predator species -> using facet_wrap for the variable (pred_species)
-ggplot(data = renamed_df, aes(x=log(ppmr)), group=1) + 
+ggplot(data = renamed_df, aes(x=lppmr), group=1) + 
   labs(title = "log(PPMR) v. biomass density of prey", x="log(PPMR)", y="Biomass density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
   geom_density(aes(weight = prey_weight_g), colour="red")
+#geom_density means area under the curve = 1
 
 #poor cod and boarfish?
 ``` 
@@ -105,7 +119,7 @@ A graph of the log(ppmr) (weighted by prey biomass density) for each species aga
 # Ave PPMR for individual species, weighted by number of prey:
 ```{r ave PPMR prey no., echo = TRUE}
 #Separated into individual plots for each predator species -> using facet_wrap for the variable (pred_species)
-ggplot(data = renamed_df, aes(x=log(ppmr)), group=1) + 
+ggplot(data = renamed_df, aes(x=lppmr), group=1) + 
   labs(title = "Scatter plot: log(PPMR) v. number density of prey", x="log(PPMR)", y="Number density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
@@ -118,10 +132,7 @@ A graph of the log(ppmr) (weighted by number of prey) for each species against t
 
 # Specific PPMR calculations by different weightings for Herring species
 
-```{r Herring PPMR setup, echo = TRUE} 
-renamed_df = renamed_df %>% mutate(lppmr = log(ppmr))
-#adding a column of log(ppmr) values
-
+```{r Herring PPMR setup, echo = TRUE}
 herringDF <- renamed_df %>% 
     filter(pred_species == fixed("Herring"))
 #separate data set of a single species - Herring
@@ -139,7 +150,7 @@ print(paste("Standard deviation of this:", herringSD))
 #var is variance, i.e. ave. distance from each point to the mean
 #mean is the arithmetic mean of log(ppmr)
 
-ggplot(data = herringDF, aes(x=log(ppmr)), group=1) + 
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against biomass density for Herring", x="log(PPMR)", y="density of observations") +
           geom_density(colour="red") + 
           theme(plot.title = element_text(size=15)) + 
@@ -155,7 +166,7 @@ bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm
 print(paste("log(ppmr) mean, weighted by biomass of prey:", bio_herringmean))
 print(paste("Standard deviation of this:", bio_herringSD))
 
-ggplot(data = herringDF, aes(x=log(ppmr)), group=1) + 
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against biomass density for Herring, weighted by prey biomass 
                (with a normal distribution, weighted by prey biomass)", x="log(PPMR)",y="Biomass density of observations") +
           geom_density(aes(weight = prey_weight_g), colour="blue") + 
@@ -174,7 +185,7 @@ print(paste("Standard deviation of this:", no_herringSD))
 #weighted standard deviation found using the weighted variance
 #mean and standard deviation, weighted by the number of prey
 
-ggplot(data = herringDF, aes(x=log(ppmr)), group=1) + 
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against number density for Herring, weighted by no. of prey 
                (with a normal distribution, 
                weighted by number of prey per stomach)", x="log(PPMR)", y="No. density of observations") +
@@ -187,7 +198,7 @@ ggplot(data = herringDF, aes(x=log(ppmr)), group=1) +
 
 ```{r Herring combined graph, echo = TRUE} 
 #combined graph of weighted by biomass and by number density
-ggplot(data = herringDF, aes(x=log(ppmr)), group=1) + 
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against biomass/number density for Herring,
                with different weightings",
                x="log(PPMR)", y="Number/biomass density of observations") +
@@ -216,7 +227,7 @@ What does this mean?
 
 # Prey weight v. number density of prey
 ```{r indiv_prey_weight v. no. density of prey, echo = TRUE}
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), no._prey_per_stmch)) + 
+ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
   labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey per predator stomach") + 
   geom_point(size=0.5)
 #Some interesting results --> introduce colours to show ships  
@@ -231,7 +242,7 @@ interesting_haul <- filter(renamed_df, haul_id_short=='CLYDE'|haul_id_short=='EN
 
 haul_list_interesting <- unique(interesting_haul$haul_id_short)
 
-ggplot (data = interesting_haul, aes(x=log(indiv_prey_weight), y=no._prey_per_stmch)) + 
+ggplot (data = interesting_haul, aes(x=logprey_weight, y=no._prey_per_stmch)) + 
   labs(title = "log(prey weight) v. number of prey per stomach - separated by ship names", x="log(prey weight)", y="No. prey per stomach") + 
   geom_point(size=0.01, colour="red") +
   theme(strip.text = element_text(size = 5)) + facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
@@ -241,7 +252,7 @@ Playing around with data to see any specific correlations; what is the distribut
 
 1. Prey weight v. no. prey per stomach
 2. Log (prey weight) v. no. prey per stomach -> showed some interesting results, so added colours to identify individual ships
-3. Graph 3., but with points from each ship plotted on separate graphs -> note y prop. to e^-x relation for END04; lots of observations for single weights for LUC and CLYDE; lots of the same no. of fish observations for HIDDINK.
+3. Graph 2., but with points from each ship plotted on separate graphs -> note y prop. to e^-x relation for END04 (i.e. no. per stomach is proportional to 1/prey weight); lots of observations for single weights for LUC and CLYDE; lots of the same no. of fish observations for HIDDINK.
 
 Also, I found that the EXCmacDATSTO815 and Excmacdatsto815error gave exactly the same data (which might need to be considered in later calculations).
 
@@ -254,16 +265,17 @@ ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) +
   labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
 #mass since measured in g
 
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + 
+#renamed_df$density <- get_density(renamed_df$, dat$y, n = 100)
+
+ggplot(data = renamed_df, aes(logprey_weight, lpred_weight)) + 
   geom_point(size=0.5) + 
   labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)") + 
   stat_smooth (method='lm', se=FALSE)
 
-#slope <- coef(lm(log(renamed_df$pred_weight_g)~log(renamed_df$indiv_prey_weight)))
-#print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope))
-#second part is intercept -> how to separate?
+slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
+print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2]))
 
-ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) + 
+ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
   labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)") +
   geom_point(size=0.2) + 
   facet_wrap(~pred_species, scale="free_y") + 
@@ -273,11 +285,16 @@ ggplot(data = renamed_df, aes(log(indiv_prey_weight), log(pred_weight_g))) +
 
 1. Prey weight v. predator weight -> attempting to find a link between the predator mass and the prey mass  
 2. log(prey weight) v. log(pred. weight) ->  using log() to see proportionality of the axes, slope of added line should = PPMR  
-3. Looking to find correlation between the masses for each individual species; the slope should intersect the y-axis at 0, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect. The slope shows the relation between predator and prey mass, i.e. the ppmr for each individual predator species.  
+3. Looking to find correlation between the masses for each individual species; the slope should have gradient=1, else our idea for PPMR calculation (pred mass is prop. to prey mass) is incorrect. 
+
+log(pred weight) = mlog(prey weight) + C
+Hence, pred weight = e^(mlog(preyweight) + log(D)) (where C=log(D))
+Therefore,
+pred weight = (prey weight)^m * D -> we want m=1 for pred weight proportional to prey weight.
 
 # Predator weight v. ppmr
 ```{r pred weight v. ppmr, echo = TRUE}
-ggplot(data=renamed_df, aes(log(pred_weight_g), log(ppmr))) + 
+ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001) +
   labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
   stat_smooth (method='lm', se=FALSE) + 
@@ -286,13 +303,13 @@ ggplot(data=renamed_df, aes(log(pred_weight_g), log(ppmr))) +
 #Focusing in on just poor cod
 species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 
-ggplot(data=species_df, aes(log(pred_weight_g), log(ppmr))) + 
+ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
   labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
   facet_wrap(~pred_species, scale="free_y") + 
   stat_smooth(method=lm)
 
-species_slope <- coef(lm(log(species_df$ppmr)~log(species_df$pred_weight_g)))
+species_slope <- coef(lm(species_df$lppmr~species_df$lpred_weight))
 print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:", species_slope[2]))
 ```
 
@@ -313,17 +330,30 @@ HOW TO ADD THE UNCERTAINTY IN THE LOBF
 ```{r first mixed effects, echo=TRUE}
 #fixed: pred_species and prey_weight_g
 #random: haul_id_short
-lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
+m <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
+
+lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
+
+#ggplot(fortify(m), aes(prey_weight_g, log(ppmr),  color=pred_species)) +
+  stat_summary(fun.data=mean_se, geom="pointrange") +
+  stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
+
+#anova (nullmodel1, nullmodel2, nullmodel3)
+#To find which of 3 potential models have the 'best fitting' random effects structure
 
 #fixed: pred_species and prey_weight_g
 #random: haul_id_short, year, no._prey_per_stmch, ices_rectangle
-lmer(log(ppmr) ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no._prey_per_stmch) + (1|ices_rectangle), data = renamed_df)
+lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no._prey_per_stmch) + (1|ices_rectangle), data = renamed_df)
 
 #Generally: lmer(fixed ~ (1|random) + linear)
+#(1|...) means accounting for for random intercepts (varying baseline levels) in your variable.
+#(0|...) means the variable has a fixed intercept and not a random one
+#e.g. (1|year) means random intercepts and slopes for year (different baselines, different average effect per year).
+#REML = FALSE?
 ```
 
-Fixed effect: log(ppmr)
+Fixed effect: log(ppmr) (the main effect we are tracking)
 
 Random effects: haul_id_short, year
 
-Linear fixed effects: pred_species, prey_weight_g
+Linear (fixed) effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
