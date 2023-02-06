@@ -24,6 +24,15 @@ library(mizer)
 library(Hmisc)
 library(lme4)
 library(RColorBrewer)
+library(viridis)
+
+get_density <- function(x, y, ...) {
+  dens <- MASS::kde2d(x, y, ...)
+  ix <- findInterval(x, dens$x)
+  iy <- findInterval(y, dens$y)
+  ii <- cbind(ix, iy)
+  return(dens$z[ii])
+}
 ```
 
 ```{r block, message=FALSE, include=FALSE}
@@ -265,12 +274,13 @@ ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) +
   labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
 #mass since measured in g
 
-#renamed_df$density <- get_density(renamed_df$, dat$y, n = 100)
+renamed_df$density <- get_density(renamed_df$lprey_weight, renamed_df$lpred_weight, n = 100)
 
-ggplot(data = renamed_df, aes(logprey_weight, lpred_weight)) + 
+ggplot(data = renamed_df, aes(lprey_weight, lpred_weight, color=density)) + 
   geom_point(size=0.5) + 
   labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)") + 
-  stat_smooth (method='lm', se=FALSE)
+  stat_smooth (method='lm', se=FALSE, colour="red")
+  
 
 slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
 print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2]))
