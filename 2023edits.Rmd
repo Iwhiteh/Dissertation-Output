@@ -33,6 +33,7 @@ get_density <- function(x, y, ...) {
   ii <- cbind(ix, iy)
   return(dens$z[ii])
 }
+#introducing a density plot for later
 ```
 
 ```{r block, message=FALSE, include=FALSE}
@@ -251,7 +252,7 @@ interesting_haul <- filter(renamed_df, haul_id_short=='CLYDE'|haul_id_short=='EN
 
 haul_list_interesting <- unique(interesting_haul$haul_id_short)
 
-ggplot (data = interesting_haul, aes(x=logprey_weight, y=no._prey_per_stmch)) + 
+ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
   labs(title = "log(prey weight) v. number of prey per stomach - separated by ship names", x="log(prey weight)", y="No. prey per stomach") + 
   geom_point(size=0.01, colour="red") +
   theme(strip.text = element_text(size = 5)) + facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
@@ -278,9 +279,11 @@ renamed_df$density <- get_density(renamed_df$lprey_weight, renamed_df$lpred_weig
 
 ggplot(data = renamed_df, aes(lprey_weight, lpred_weight, color=density)) + 
   geom_point(size=0.5) + 
-  labs(title = "log(Predator mass) v. log(prey mass) plot", x="log(Prey mass)", y="log(Predator mass)") + 
-  stat_smooth (method='lm', se=FALSE, colour="red")
-  
+  labs(title = "log(Predator mass) v. log(prey mass) plot", 
+       x="log(Prey mass)", y="log(Predator mass)") + 
+  stat_smooth (method='lm', se=FALSE, colour="red") +
+  scale_fill_distiller(palette = "Pastel")
+#Rewrite density function
 
 slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
 print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2]))
@@ -291,6 +294,7 @@ ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) +
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
   stat_smooth (method='lm', se=FALSE, colour="red")
+
 ```
 
 1. Prey weight v. predator weight -> attempting to find a link between the predator mass and the prey mass  
@@ -317,10 +321,29 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
   geom_point(size=0.5) +
   labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
   facet_wrap(~pred_species, scale="free_y") + 
-  stat_smooth(method=lm)
+  stat_smooth(aes(weight=no._prey_per_stmch), method='lm', colour='blue', se=FALSE) +
+  stat_smooth(method='lm', colour='red', se=FALSE) +
+  stat_smooth(aes(weight=prey_weight_g), method='lm', colour='green', se=FALSE)
+#se=FALSE doesn't add an area of error around the LOBF 
 
-species_slope <- coef(lm(species_df$lppmr~species_df$lpred_weight))
-print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:", species_slope[2]))
+print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:"))
+
+#weighted by number of prey per stomach
+perstmch_weighting <- 
+  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
+print(paste("i) Weighted by no prey in the stomach:", perstmch_weighting[2]))
+
+#no weighting
+no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
+print(paste("ii) No weighting in the calculation:", no_weighting[2]))
+
+#weighted by prey biomass
+biomass_weighting <- 
+  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
+print(paste("iii) Weighted by prey biomass:", biomass_weighting[2]))
+
+
+
 ```
 
 Graphing log(pred mass) v. log(ppmr) for individual predator species to see if predator mass related to the ppmr.
@@ -329,11 +352,12 @@ i.e. we want them to not be proportional (i.e. slope = 0) to prove that log(pred
 
 First, plot graphs of log(pred mass) v. log(ppmr) for each individual predator species, with line of best fit on each graph
 
-Looking at just the predator species 'poor cod'.
-This graph includes a region of error for the line of best fit .
+Looking at just the predator species 'poor cod'. The LOBF are weighted by different variables
+i) blue: by number of prey per stomach
+ii) red: no weighting
+iii) green: by prey biomass
 
-CHECK: IS THIS NO. OF POINTS RECORDED OR NO. POINTS*NO. PREY PER STOMACH
-HOW TO ADD THE UNCERTAINTY IN THE LOBF
+When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation is true when looking at a prey biomass weighting.
 
 # Introducing a mixed effects model
 
@@ -345,8 +369,8 @@ m <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renam
 lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
 
 #ggplot(fortify(m), aes(prey_weight_g, log(ppmr),  color=pred_species)) +
-  stat_summary(fun.data=mean_se, geom="pointrange") +
-  stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
+  #stat_summary(fun.data=mean_se, geom="pointrange") +
+  #stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
 
 #anova (nullmodel1, nullmodel2, nullmodel3)
 #To find which of 3 potential models have the 'best fitting' random effects structure
