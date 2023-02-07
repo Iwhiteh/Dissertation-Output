@@ -25,15 +25,7 @@ library(Hmisc)
 library(lme4)
 library(RColorBrewer)
 library(viridis)
-
-get_density <- function(x, y, ...) {
-  dens <- MASS::kde2d(x, y, ...)
-  ix <- findInterval(x, dens$x)
-  iy <- findInterval(y, dens$y)
-  ii <- cbind(ix, iy)
-  return(dens$z[ii])
-}
-#introducing a density plot for later
+library(hexbin)
 ```
 
 ```{r block, message=FALSE, include=FALSE}
@@ -275,21 +267,21 @@ ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) +
   labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
 #mass since measured in g
 
-renamed_df$density <- get_density(renamed_df$lprey_weight, renamed_df$lpred_weight, n = 100)
-
-ggplot(data = renamed_df, aes(lprey_weight, lpred_weight, color=density)) + 
-  geom_point(size=0.5) + 
+ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
+  geom_point() +
   labs(title = "log(Predator mass) v. log(prey mass) plot", 
        x="log(Prey mass)", y="log(Predator mass)") + 
-  stat_smooth (method='lm', se=FALSE, colour="red") +
-  scale_fill_distiller(palette = "Pastel")
-#Rewrite density function
+  geom_hex(bins = 70) +
+  theme_bw() +
+  scale_fill_continuous(type = "viridis", option='magma') +
+  stat_smooth(method='lm', se=FALSE, colour="blue")
 
 slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
 print(paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2]))
 
 ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", x="log(prey mass)", y="log(pred. mass)") +
+  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", 
+       x="log(prey mass)", y="log(pred. mass)") +
   geom_point(size=0.2) + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
@@ -321,10 +313,16 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
   geom_point(size=0.5) +
   labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
   facet_wrap(~pred_species, scale="free_y") + 
-  stat_smooth(aes(weight=no._prey_per_stmch), method='lm', colour='blue', se=FALSE) +
-  stat_smooth(method='lm', colour='red', se=FALSE) +
-  stat_smooth(aes(weight=prey_weight_g), method='lm', colour='green', se=FALSE)
+  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), method='lm', se=FALSE) +
+  stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
+  stat_smooth(aes(weight=prey_weight_g, colour='by prey bio'), method='lm', se=FALSE) +
+  stat_summary(fun.data=mean_se, geom="linerange") +
+  scale_colour_manual(name="Weightings",
+                      breaks=c('by no. of prey in stomach', 'no weighting', 'by prey bio'),
+                     values=c('by no. of prey in stomach'='blue', 
+                              'no weighting'='red', 'by prey bio'='green'))
 #se=FALSE doesn't add an area of error around the LOBF 
+#linerange draws a point range between an upper and lower limit for the line, and the mean for the point
 
 print(paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:"))
 
@@ -342,9 +340,8 @@ biomass_weighting <-
   coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
 print(paste("iii) Weighted by prey biomass:", biomass_weighting[2]))
 
-
-
 ```
+
 
 Graphing log(pred mass) v. log(ppmr) for individual predator species to see if predator mass related to the ppmr.
 
@@ -352,9 +349,9 @@ i.e. we want them to not be proportional (i.e. slope = 0) to prove that log(pred
 
 First, plot graphs of log(pred mass) v. log(ppmr) for each individual predator species, with line of best fit on each graph
 
-Looking at just the predator species 'poor cod'. The LOBF are weighted by different variables
+Looking at just the predator species 'poor cod'. The LOBF (line of best fit) is weighted by different variables
 i) blue: by number of prey per stomach
-ii) red: no weighting
+ii) red: no weighting in the LOBF
 iii) green: by prey biomass
 
 When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation is true when looking at a prey biomass weighting.
