@@ -1,19 +1,19 @@
 ---
 title: 'Dissertation'
+author: 'Imogen Whitehead'
 output: 
   html_document:
     toc: true
     number_sections: true
     code_folding: hide
-date: "2022-10-27"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE) #doesn't show code or error messages in knit
-```
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE) 
+#include=FALSE, echo=FALSE and warning=FALSE ensure the code and any error messages aren't shown in the output HTML file
 
-```{r library, message=FALSE, include=FALSE} 
-#don't print outputs
+#message=FALSE means no output messages are printed on the knitted HMTL file
+#loading any necessary packages
 library(dplyr)
 library(tidyverse) 
 library(knitr)
@@ -28,32 +28,31 @@ library(viridis)
 library(hexbin)
 ```
 
-```{r block, message=FALSE, include=FALSE}
-(load("stomach_dataset.Rdata")) #change to access via github repository
-#the dataset is already named stom_df
-stom_df
-df <- stom_df %>% transmute(haul_id, latitude, longitude, ices_rectangle, year, pred_species, pred_weight_g, pred_length_cm, prey_species, prey_weight_g, prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, no._prey_per_stmch = prey_count / n_stomachs, ppmr) 
-df
-#ices_rectangle accounts for location of points
+```{r loading, message=FALSE, include=FALSE}
+load("stomach_dataset.Rdata")
+#loading the dataset to be used in analysis (the dataset is already named stom_df)
+
+df <- stom_df %>% transmute(haul_id, ices_rectangle, year, pred_species, 
+                            pred_weight_g, pred_length_cm, prey_weight_g, 
+                            prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, 
+                            prey_count, n_stomachs, no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
+#creating a new data set called 'df' which only contains certain selected columns
+
+df <- df[df$indiv_prey_weight != 0, ]
+df <- df[df$pred_weight_g != 0, ]
+df <- df[df$indiv_prey_weight != Inf, ]
+#Removes any points where the prey weight = Inf or 0, or the predator weight = 0
 ```
 
 ```{r cleaning smaller, message=FALSE, include=FALSE}
-df_fixed <- df[df$indiv_prey_weight != 0, ]
-df_fixed <- df_fixed[df_fixed$pred_weight_g != 0, ]
-df_fixed <- df_fixed[df_fixed$indiv_prey_weight != Inf, ]
-
-#a smaller (random) sample of the overall data set
-#to check errors:
-#anyNA(renamed_df_small$ppmr)
-#any(renamed_df_small$ppmr == 0)
-
-renamed_df = df_fixed %>% 
+renamed_df = df %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Clupea harengus", "Herring")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Melanogrammus aeglefinus", "Haddock")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Merlangius merlangus", "Whiting")) %>%
-  mutate(pred_species = replace(pred_species, pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
+  mutate(pred_species = replace(pred_species, 
+                                pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Trisopterus esmarkii", "Norway Pout")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Trisopterus minutus", "Poor Cod")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Merluccius merluccius", "European Hake")) %>%
@@ -66,50 +65,88 @@ renamed_df = df_fixed %>%
   mutate(pred_species = replace(pred_species, pred_species == "Solea solea", "Sole")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Capros apers", "Boarfish"))
 
-species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
+#Renaming the predator species from their latin names (e.g. Capros apers) to their more common names (e.g. Boarfish)
+#Creates a new dataframe (called 'renamed_df') with these replaced names
+
+species_list <- list("Herring", "Sprat", "Cod", "Haddock", "Whiting", "Blue Whiting", 
+                     "Norway Pout", "Poor Cod", "European Hake", "Monkfish", "Horse Mackerel", 
+                     "Mackerel", "Common Dab", "Plaice", "Megrim", "Sole", "Boarfish")
+#Creates an array called 'species_list', which is list of the predator species we are focusing on in this project
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
+#Removes any observations of predator species not in the species_list, i.e. they are irrelevant data points for this project
 
 renamed_df$lppmr <- log(renamed_df$ppmr)
-#adding a column of log(ppmr) values
 renamed_df$lprey_weight <- log(renamed_df$indiv_prey_weight)
 renamed_df$lpred_weight <- log(renamed_df$pred_weight_g)
-
-#to change to bigger df, just remove the bit below
-#renamed_df <- renamed_df[1:5000,]
-#renamed_df <- renamed_df[sample(nrow(df), 5000), ]
+#Adds columns which take the log value of ppmr, individual prey weight and predator weight to the main data set
 ```
+
+# Introduction
+
+This data set is formed from recordings taken by multiple ships between the years 1886-2016.
+
+Fish were taken from some location, and their individual stomach contents recorded. Predators of the same species and (roughly) the same weight/size were recorded as a single data point (the number of predators for each data set is called 'n_stomachs'). Prey of (roughly) the same size found in these stomachs were recorded in this same data point, and the total number of prey in some data point is called 'prey_count'. For each individual data point,
+
+$$
+    \text{no. prey per stomach} = \frac{\text{no. of stomachs sampled}}{\text{total no. of prey}}
+$$
+This is an aproximation of the number of prey per stomach for some specific predator, and is called '
+no._prey_per_stmch'.
+
+Using similar logic,'prey_weight_g' is the total weight of prey in the multiple stomachs sampled to make up one datapoint. 'indiv_prey_weight' is then the weight of one single prey individual found in the stomach
+
+
+There are some other column names which are useful to note:
+
+* ices_rectangle accounts for location of points, where each area the points are sampled in is split up into a number of smaller rectangles and each is given a unique name
+
+* ppmr stands for 'predator prey mass ratio', and is calculated by:
+
+* haul_id is a identification tag given to each individual ship which recorded observations
 
 # Distribution of prey type eaten for each predator
 
-```{r r distribution of prey, echo = TRUE}
+```{r r distribution of prey}
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   geom_bar(stat="count", width=0.7) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
   theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())  +
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = "Distribution of prey types for each predator", x="Prey type", y="Count")
 
+#geom_bar() creates a bar chart from the specified data
+#facet_wrap() means an individual bar chart is created for each individual predator species
 #'theme()' removes any words on the x-axis so the graphs are easier to understand
-#scale_fill_brewer means the colours are easy to distinguish between
+#scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between
 ```
 
 These are individual bar charts showing the distribution of the type of prey each predator eats.
 
-Benthos: organisms that live on/near the bottom of a body of water
-Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers)
-Nekton: the actively swimming aquatic organisms
-Other: misc. types that don't fit into the other categories
-Zooplankton: animal plankton (plankton are aquatic organisms that are unable to swim effectively against currents)
+The prey types are:
 
-# Ave PPMR for individual species, weighted by prey biomass:
-```{r ave PPMR biomass, echo = TRUE}
-#Separated into individual plots for each predator species -> using facet_wrap for the variable (pred_species)
+* Benthos: organisms that live on/near the bottom of a body of water
+
+* Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers)
+
+* Nekton: the actively swimming aquatic organisms
+
+* Other: misc. types that don't fit into the other categories
+
+* Zooplankton: animal plankton (plankton are aquatic organisms that are unable to swim effectively against currents)
+
+# Average PPMR for individual species
+
+##  Weighted by prey biomass:
+```{r ave PPMR biomass}
 ggplot(data = renamed_df, aes(x=lppmr), group=1) + 
   labs(title = "log(PPMR) v. biomass density of prey", x="log(PPMR)", y="Biomass density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
   geom_density(aes(weight = prey_weight_g), colour="red")
-#geom_density means area under the curve = 1
+
+#using facet_wrap for the variable (pred_species) means the data is separated into individual plots for each predator species
+#geom_density means area under the curve = 1 (i.e. the graph is normalised)
 
 #poor cod and boarfish?
 ``` 
@@ -118,8 +155,8 @@ Looking for the most common log(PPMR) for each individual species.
 
 A graph of the log(ppmr) (weighted by prey biomass density) for each species against the biomass density of the prey.
 
-# Ave PPMR for individual species, weighted by number of prey:
-```{r ave PPMR prey no., echo = TRUE}
+## Weighted by number of prey:
+```{r ave PPMR prey no.}
 #Separated into individual plots for each predator species -> using facet_wrap for the variable (pred_species)
 ggplot(data = renamed_df, aes(x=lppmr), group=1) + 
   labs(title = "Scatter plot: log(PPMR) v. number density of prey", x="log(PPMR)", y="Number density of prey") +
@@ -134,7 +171,7 @@ A graph of the log(ppmr) (weighted by number of prey) for each species against t
 
 # Specific PPMR calculations by different weightings for Herring species
 
-```{r Herring PPMR setup, echo = TRUE}
+```{r Herring PPMR setup}
 herringDF <- renamed_df %>% 
     filter(pred_species == fixed("Herring"))
 #separate data set of a single species - Herring
@@ -142,7 +179,7 @@ herringDF <- renamed_df %>%
 
 ## No weighting
 
-```{r No weighting, echo = TRUE} 
+```{r No weighting} 
 #No weighting
 herringmean = mean(herringDF$lppmr)
 herringSD = sqrt(var(herringDF$lppmr))
@@ -161,7 +198,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 ## Weighted by prey biomass
 
-```{r Prey biomass weighting, echo = TRUE} 
+```{r Prey biomass weighting} 
 #Weighted by prey biomass
 bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
 bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
@@ -178,7 +215,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 ## Weighted by number of prey
 
-```{r No of prey weighting, echo = TRUE} 
+```{r No of prey weighting} 
 #Weighted by number of prey
 no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
 no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
@@ -198,7 +235,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 ## Combined graph
 
-```{r Herring combined graph, echo = TRUE} 
+```{r Herring combined graph} 
 #combined graph of weighted by biomass and by number density
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against biomass/number density for Herring,
@@ -228,7 +265,7 @@ The mean is shifted by 6.911843.
 What does this mean?
 
 # Prey weight v. number density of prey
-```{r indiv_prey_weight v. no. density of prey, echo = TRUE}
+```{r indiv_prey_weight v. no. density of prey}
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
   labs(title = "log(prey weight) v. number of prey per predator stomach", x="log(prey weight)", y="No. of prey per predator stomach") + 
   geom_point(size=0.5)
@@ -261,7 +298,7 @@ Also, I found that the EXCmacDATSTO815 and Excmacdatsto815error gave exactly the
 
 # Prey weight v. Predator weight
 
-```{r prey weight v. pred weight, echo = TRUE}
+```{r prey weight v. pred weight, warning=FALSE}
 ggplot (data = renamed_df, aes(indiv_prey_weight, pred_weight_g)) +
   geom_point(size=0.5) + 
   labs(title = "Predator v. prey mass plot", x="Prey mass (g)", y="Predator mass (g)")
@@ -273,6 +310,7 @@ ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) +
        x="log(Prey mass)", y="log(Predator mass)") + 
   geom_hex(bins = 70) +
   theme_bw() +
+  #scale_fill_viridis_c(trans = "log") +
   scale_fill_continuous(type = "viridis", option='magma') +
   stat_smooth(method='lm', se=FALSE, colour="blue")
 
@@ -299,7 +337,7 @@ Therefore,
 pred weight = (prey weight)^m * D -> we want m=1 for pred weight proportional to prey weight.
 
 # Predator weight v. ppmr
-```{r pred weight v. ppmr, echo = TRUE}
+```{r pred weight v. ppmr, warning=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001) +
   labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
@@ -358,7 +396,7 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 
 # Introducing a mixed effects model
 
-```{r first mixed effects, echo=TRUE}
+```{r first mixed effects}
 #fixed: pred_species and prey_weight_g
 #random: haul_id_short
 m <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
