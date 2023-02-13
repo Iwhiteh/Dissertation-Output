@@ -31,6 +31,7 @@ library(hexbin)
 ```{r loading, message=FALSE, include=FALSE}
 load("stomach_dataset.Rdata")
 #loading the dataset to be used in analysis (the dataset is already named stom_df)
+#abc
 
 df <- stom_df %>% transmute(haul_id, ices_rectangle, year, pred_species, 
                             pred_weight_g, pred_length_cm, prey_weight_g, 
