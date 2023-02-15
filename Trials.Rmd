@@ -5,7 +5,7 @@ output:
   html_document:
     toc: true
     number_sections: true
-    code_folding: show
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE, echo=TRUE}
@@ -388,9 +388,10 @@ ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) +
 
 ```{r pvp gradients, echo=TRUE}
 i <- 1
+species_grad =c()
 #setting i=1 for the while loop
 
-while(i<length(species_list)){
+while(i<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
   grad <- coef(lm((species_df$lpred_weight)~(species_df$lprey_weight)))
   species_grad[i] <- grad[2]
@@ -502,13 +503,17 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 
 # Introducing a mixed effects model
 
+```{r mixed, echo=TRUE}
+a <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
+#REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
+
+b <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df)
+
+a
+b
+```
+
 ```{r first mixed effects, echo=TRUE}
-#fixed: pred_species and prey_weight_g
-#random: haul_id_short
-m <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df)
-
-lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
-
 #ggplot(fortify(m), aes(prey_weight_g, log(ppmr),  color=pred_species)) +
   #stat_summary(fun.data=mean_se, geom="pointrange") +
   #stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
@@ -518,7 +523,6 @@ lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df
 
 #fixed: pred_species and prey_weight_g
 #random: haul_id_short, year, no._prey_per_stmch, ices_rectangle
-lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no._prey_per_stmch) + (1|ices_rectangle), data = renamed_df)
 
 #Generally: lmer(fixed ~ (1|random) + linear)
 #REML = FALSE?
@@ -526,6 +530,7 @@ lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|no
 
 Fixed effect: log(ppmr) (the main effect we are tracking)
 
-Random effects: haul_id_short, year
+Random effects: haul_id_short, year, ices_rectangle, no. prey per stomach (?)
 
 Linear (fixed) effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
+
