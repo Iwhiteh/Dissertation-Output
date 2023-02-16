@@ -503,6 +503,8 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 
 # Introducing a mixed effects model
 
+## Trialing differnt models
+
 ```{r mixed, echo=TRUE}
 a <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
@@ -521,22 +523,20 @@ summary(d)
 
 By comparing the AIC and BIC values, we can see that the final model is the most effective.
 
-```{r first mixed effects, echo=TRUE}
-summary(a)
-summary(b)
-summary(c)
-summary(d)
+## Adding alterations and weighting to the models
 
+```{r first mixed effects, echo=TRUE}
 e <-  resid(d)
 summary(e)
 hist(e)
 
+#weighting observations by prey_weight_g
 c2 <- update(c, weights = prey_weight_g)
 summary(c2)
 
-
-
-no._prey_per_stmch
+#weighting observations by no._prey_per_stmch
+c3 <- update(c, weights = no._prey_per_stmch)
+summary(c3)
 
 #fixef(d) -> extracts the estimates of the fixed effects
 #ranef(d) -> extracts the estimates of the random effects
