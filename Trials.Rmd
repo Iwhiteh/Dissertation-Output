@@ -507,26 +507,49 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 a <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
 
-b <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df)
+b <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 
-a
-b
+c <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle) + (1|year), data = renamed_df, REML=FALSE)
+
+d <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle) + (1|year) + (1|no._prey_per_stmch), data = renamed_df, REML=FALSE)
+
+summary(a)
+summary(b)
+summary(c)
+summary(d)
 ```
+
+By comparing the AIC and BIC values, we can see that the final model is the most effective.
 
 ```{r first mixed effects, echo=TRUE}
-#ggplot(fortify(m), aes(prey_weight_g, log(ppmr),  color=pred_species)) +
-  #stat_summary(fun.data=mean_se, geom="pointrange") +
-  #stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
+summary(a)
+summary(b)
+summary(c)
+summary(d)
 
-#anova (nullmodel1, nullmodel2, nullmodel3)
-#To find which of 3 potential models have the 'best fitting' random effects structure
+e <-  resid(d)
+summary(e)
+hist(e)
 
-#fixed: pred_species and prey_weight_g
-#random: haul_id_short, year, no._prey_per_stmch, ices_rectangle
+c2 <- update(c, weights = prey_weight_g)
+summary(c2)
+
+
+
+no._prey_per_stmch
+
+#fixef(d) -> extracts the estimates of the fixed effects
+#ranef(d) -> extracts the estimates of the random effects
+#coef(d) -> extract the coefficients for the random effects intercept and each group of the random effect factor
+#resid(d) -> extract the residuals (errors) and summarize them
+#hist(e) -> plot the residuals (they should be approximately normally distributed around a mean of zero)
 
 #Generally: lmer(fixed ~ (1|random) + linear)
-#REML = FALSE?
 ```
+
+Variance of the groups decreases as other random effects are added to the models.
+But, the error term (standard error) roughly increases as more random effects are added to the model.
+
 
 Fixed effect: log(ppmr) (the main effect we are tracking)
 
