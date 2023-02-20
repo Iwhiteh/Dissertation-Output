@@ -323,20 +323,19 @@ Though we will not remove or alter the data set to account for these potentially
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
 ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  geom_point() +
   labs(title = "log(Predator mass) v. log(prey mass) plot", 
        x="log(Prey mass)", y="log(Predator mass)") + 
-  geom_hex(bins = 70) +
-  theme_bw() +
-  #scale_fill_viridis_c(trans = "log") +
-  scale_fill_continuous(type = "viridis", option='magma') +
+  geom_hex(bins = 50) +
+  scale_fill_gradient2(low = "black", mid="orange", high = "red", midpoint=600) +
   stat_smooth(method='lm', se=FALSE, colour="blue")
 
 # stat_smooth adds a line of best fit plotted through the points
-# method='lm' ensures it's a straight line, i.e. a linear model
+# method='lm' ensures it is a straight line, i.e. a linear model
 # se=FAlSE creates only a single line, with no error of margin included
 
-#scale_fill_continuous creates a density colour scale, meaning that areas with a high density of points are yellow and areas with a low density of points are darker in colour
+#geom_hex creates "bins" in the data where the density is calculated over
+#bins=50 means that there are 50 "bins" in the horizontal direction and 50 in the vertical
+#scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
 
 slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
 paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2])
@@ -403,9 +402,11 @@ while(i<=length(species_list)){
 
 pvp_grads <- data.frame(pred_species=c(species_list),
                         gradient=c(species_grad))
-pvp_grads
+
+kable(pvp_grads)
 #creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
 #each row contains the name of some individual predator species and its associated gradient
+#kable prints the information in the pvp_grads
 ```
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality for each specific species.
@@ -413,6 +414,9 @@ Here, we are splitting up the graphs over each individual predator species to lo
 We are wanting gradient=1 for proportionality. This is only (approximately) true for the species Cod and Monkfish. Although this is a very limited number of the predator species, the assumption that the predator and prey masses are proportional is a reasonable one, so we will continue wiht this assumption.
 
 # Predator weight against ppmr
+
+## Plotting predator weight against ppmr, separated by predator species
+
 ```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001) +
@@ -449,10 +453,11 @@ while(j<=length(species_list)){
 
 ppmrvp_grads <- data.frame(pred_species=c(species_list),
                         gradient=c(species_grad_ppmr))
-ppmrvp_grads
+
+kable(ppmrvp_grads)
 ```
 
-For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euopen Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
+For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euorpean Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
 
 ## Different weightings
 
