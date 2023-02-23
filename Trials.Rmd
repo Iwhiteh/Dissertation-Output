@@ -560,7 +560,7 @@ renamed_df %>%
     geom_line(size=1) 
 
 anova(null,one,two,three)
-#comparing the four modles
+#comparing the four models
 ```
 
 Null model:
