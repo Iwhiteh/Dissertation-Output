@@ -347,7 +347,7 @@ paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2])
 We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
 
 $$
- \text{log(pred weight)} = m * \text{log(prey weight)} + c
+ \log (\text{pred weight}) = m \times \text{log(prey weight)} + c
 $$
 
 Where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
@@ -355,14 +355,14 @@ Where m is the gradient of the slope and c is the y-intercept (thinking of this 
 Taking the exponential of both sides,
 
 $$
-  \text{pred weight} = exp^{m*\text{log(preyweight)}} + log(D)
+  \text{pred weight} = \exp({{m}\times{\log(\text{prey weight})}}) + \log(D)
 $$
 where log(d) = c. 
 
 Finally,
 
 $$
-  \text{pred weight} = \text{prey weight}^m * D
+  \text{pred weight} = \text{prey weight}^m \times D
 $$
 
 Hence, we want m=1 to show that pred weight proportional to prey weight (as expected).
@@ -428,7 +428,7 @@ ggplot(data=renamed_df, aes(lpred_weight, lppmr)) +
 Graphing log(pred mass) v. log(ppmr) for individual predator species to see if the predator mass related to the ppmr. 
 
 $$
-    \text{log(pred mass)} = m*\text{log(prey mass)} + c
+    \log(\text{pred mass}) = m \times \log (\text{prey mass}) + c
 $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
@@ -511,7 +511,7 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 ## Trialing differnt models
 
 ```{r mixed, echo=TRUE}
-a <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
+a <- lmer(lppmr ~ prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
 
 b <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
@@ -524,6 +524,43 @@ summary(a)
 summary(b)
 summary(c)
 summary(d)
+
+#anova(mod_all, mod_nofixed, mod_nopred, mod_nopred_wgt)
+#+ (1|data)
+
+
+f <- lmer(lppmr ~ lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
+summary(f)
+
+e <- lmer(lppmr ~ lprey_weight +pred_species + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
+summary(e)
+
+g <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
+summary(g)
+```
+
+Mathematical representation of model f:
+
+$$
+    \hat{\log(\text{ppmr})}_{i} = \beta_{0j[i]} + \beta_{1j[i]} \times \hat{\text{lprey_weight}_{i}} + \epsilon
+$$
+
+$i$ is the individual observation.
+$j$ is the haul_id.
+$\epsilon$ is a general error term.
+
+The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id $\beta_{0j[i]}$, and the rate of change of this value also varies by haul_id  $\beta_{j[i]}$:
+
+The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
+
+```{r misc., echo=TRUE}
+one <- lmer(lppmr ~ pred_species + lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
+two <- lmer(lppmr ~ pred_species + lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
+
+summary(one)
+summary(two)
+
+anova(one,two)
 ```
 
 By comparing the AIC and BIC values, we can see that the final model is the most effective.
@@ -555,10 +592,26 @@ summary(c3)
 Variance of the groups decreases as other random effects are added to the models.
 But, the error term (standard error) roughly increases as more random effects are added to the model.
 
-
 Fixed effect: log(ppmr) (the main effect we are tracking)
 
 Random effects: haul_id_short, year, ices_rectangle, no. prey per stomach (?)
 
-Linear (fixed) effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
+Linear (fixed) effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)\
 
+# Citations
+
+```{r citations}
+citation()
+citation(dplyr)
+citation(tidyverse) 
+citation(knitr)
+citation(readr)
+citation(ggplot2)
+citation(bbmle)
+citation(mizer) 
+citation(Hmisc)
+citation(lme4)
+citation(RColorBrewer)
+citation(viridis)
+citation(hexbin)
+```
