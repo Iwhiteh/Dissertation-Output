@@ -522,6 +522,7 @@ renamed_df %>%
 null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
 #the 'null' model has no predictors (i.e. no linear effects)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
+#Generally: lmer(fixed ~ (1|random) + linear)
 
 renamed_df %>% 
     mutate(lppmr = fitted(null)) %>% 
@@ -576,12 +577,39 @@ $ r_{ij}$ is the error term.
 ## Trialing different models
 
 ```{r mixed, echo=TRUE}
-lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+a <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
 
-lmer(lppmr ~ pred_species + lprey_weight + (1|haul_id_short) + (1|ices_rectangle) + (1|year), data = renamed_df, REML=FALSE)
+b <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
 
-#anova(mod_all, mod_nofixed, mod_nopred, mod_nopred_wgt)
-#+ (1|data)
+#(1+lprey_weight|pred_species)
+
+c <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+
+d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
+
+e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+
+hist(resid(a))
+hist(resid(b))
+hist(resid(c))
+hist(resid(d))
+hist(resid(e))
+
+print(VarCorr(a),comp="Variance")
+#Only prints the variance estimates for the random effects
+print(VarCorr(b),comp="Variance")
+print(VarCorr(c),comp="Variance")
+print(VarCorr(d),comp="Variance")
+print(VarCorr(e),comp="Variance")
+#Variance increases??
+
+AIC(a)
+AIC(b)
+AIC(c)
+AIC(d)
+AIC(d)
+AIC(e)
+#AIC decreases throughout
 ```
 
 Mathematical representation of model:
@@ -598,34 +626,20 @@ The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id 
 
 The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
 
-```{r misc.}
-d <- lmer(lppmr ~ pred_species + lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
-summary(d)
-```
+## Adding weighting to the models
 
-
-## Adding alterations and weighting to the models
-
-```{r first mixed effects, echo=TRUE}
-e <-  resid(d)
-summary(e)
-hist(e)
+```{r weighted mixed effects models, echo=TRUE}
+weight_mixed <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
 
 #weighting observations by prey_weight_g
-c2 <- update(c, weights = prey_weight_g)
-summary(c2)
+two <- update(weight_mixed, weights = prey_weight_g)
+summary(two)
 
 #weighting observations by no._prey_per_stmch
-c3 <- update(c, weights = no._prey_per_stmch)
-summary(c3)
+three <- update(weight_mixed, weights = no._prey_per_stmch)
+summary(three)
 
-#fixef(d) -> extracts the estimates of the fixed effects
-#ranef(d) -> extracts the estimates of the random effects
-#coef(d) -> extract the coefficients for the random effects intercept and each group of the random effect factor
-#resid(d) -> extract the residuals (errors) and summarize them
-#hist(e) -> plot the residuals (they should be approximately normally distributed around a mean of zero)
-
-#Generally: lmer(fixed ~ (1|random) + linear)
+anova(two,three)
 ```
 
 Variance of the groups decreases as other random effects are added to the models.
@@ -642,17 +656,11 @@ Weightings: prey_weight_g, no._prey_per_stmch
 # Citations
 
 ```{r citations}
-citation()
-citation(dplyr)
-citation(tidyverse) 
-citation(knitr)
-citation(readr)
-citation(ggplot2)
-citation(bbmle)
-citation(mizer) 
-citation(Hmisc)
-citation(lme4)
-citation(RColorBrewer)
-citation(viridis)
-citation(hexbin)
+#citation()
+
+#c("hexbin", "viridis", "RColorBrewer") %>%
+#  map(citation) %>%
+#  print(style = "text")
+
+# devtools::session_info()
 ```
