@@ -8,7 +8,9 @@ output:
     code_folding: hide
 ---
 
-```{r setup, include=FALSE, echo=TRUE}
+```{r setup, echo=TRUE, message=FALSE}
+#message=FALSE means some output messages aren't printed in the knitted HTML document
+
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE) 
 #include=FALSE, echo=FALSE and warning=FALSE ensure the code and any error messages aren't shown in the output HTML file
 
@@ -28,7 +30,7 @@ library(viridis)
 library(hexbin)
 ```
 
-```{r loading, message=FALSE, include=FALSE, echo=TRUE}
+```{r loading, message=FALSE, echo=TRUE}
 load("stomach_dataset.Rdata")
 #loading the dataset to be used in analysis (the dataset is already named stom_df)
 
@@ -44,7 +46,7 @@ df <- df[df$indiv_prey_weight != Inf, ]
 #Removes any points where the prey weight = Inf or 0, or the predator weight = 0
 ```
 
-```{r cleaning smaller, message=FALSE, include=FALSE, echo=TRUE}
+```{r cleaning smaller, message=FALSE, echo=TRUE}
 renamed_df = df %>% 
   mutate(pred_species = replace(pred_species, 
                                 pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
@@ -131,6 +133,52 @@ The prey types are:
 * Zooplankton: animal plankton (plankton are aquatic organisms that are unable to swim effectively against currents)
 
 We can see that some predators eat a range of prey types (e.g. Whiting), while others prefer to eat a single prey type in abundance (e.g. European Hake and Monkfish mostly consume fish as their prey).
+
+# Most common prey weights
+```{r log(prey weight) v. number of prey per stomach, echo=TRUE}
+ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
+      labs(title = "log(prey weight) v. number of prey per predator stomach", 
+       x="log(prey weight)", y="No. of prey per predator stomach") + 
+      geom_point(size=0.5)
+
+#geom_point() adds individual points which show individual recorded points
+#size=0.5 defines the size of each point on this graph
+``` 
+
+This graph is looking at the distribution of the weight of prey recorded, i.e. looking at what is the most common prey weight over all prey species. It is a graph over all the data points, so includes recordings from all the ships involved.
+
+There are some potentially interesting results, so results from different ships were plotted on individual curves to further look into these results.
+
+```{r sep by ships, echo=TRUE}
+renamed_df$'haul_id_short' <- gsub("\\-.*", "", renamed_df$'haul_id')
+renamed_df$'haul_id_short' <- gsub("_", "", renamed_df$'haul_id_short')
+#the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
+
+interesting_haul <- filter(renamed_df, 
+                           haul_id_short=='CLYDE'|haul_id_short=='END04'|haul_id_short=='LUC'|
+                             haul_id_short=='HIDDINK'|haul_id_short=='EXCmacDATSTO815'|
+                             haul_id_short=="Excmacdatsto815error")
+#interesting_haul is a new data frame which only contains values recorded by ships which gave "interesting" looking datapoints
+
+haul_list_interesting <- unique(interesting_haul$haul_id_short)
+#creates an array containing every individual (renamed) ship name that we are interested in
+
+ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
+  labs(title = "log(prey weight) v. number of prey per stomach - separated by ship names",
+       x="log(prey weight)", y="No. prey per stomach") + 
+  geom_point(size=0.02, colour="red") +
+  theme(strip.text = element_text(size = 5)) + 
+  facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
+```
+
+These six graphs show a range of unusual looking points:
+
+1. $y \propto e^-x$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
+2. lots of observations for single prey weights for LUC and CLYDE
+3. lots of the same no. of prey per stomach observations for HIDDINK.
+4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
+
+Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
 
 # Average PPMR for individual species
 
@@ -272,51 +320,7 @@ There is a difference in expected and actual prey biomass weighted mean of 0.305
 
 Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
-# Most common prey weights
-```{r log(prey weight) v. number of prey per stomach, echo=TRUE}
-ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
-      labs(title = "log(prey weight) v. number of prey per predator stomach", 
-       x="log(prey weight)", y="No. of prey per predator stomach") + 
-      geom_point(size=0.5)
 
-#geom_point() adds individual points which show individual recorded points
-#size=0.5 defines the size of each point on this graph
-``` 
-
-This graph is looking at the distribution of the weight of prey recorded, i.e. looking at what is the most common prey weight over all prey species. It is a graph over all the data points, so includes recordings from all the ships involved.
-
-There are some potentially interesting results, so results from different ships were plotted on individual curves to further look into these results.
-
-```{r sep by ships, echo=TRUE}
-renamed_df$'haul_id_short' <- gsub("\\-.*", "", renamed_df$'haul_id')
-renamed_df$'haul_id_short' <- gsub("_", "", renamed_df$'haul_id_short')
-#the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
-
-interesting_haul <- filter(renamed_df, 
-                           haul_id_short=='CLYDE'|haul_id_short=='END04'|haul_id_short=='LUC'|
-                             haul_id_short=='HIDDINK'|haul_id_short=='EXCmacDATSTO815'|
-                             haul_id_short=="Excmacdatsto815error")
-#interesting_haul is a new data frame which only contains values recorded by ships which gave "interesting" looking datapoints
-
-haul_list_interesting <- unique(interesting_haul$haul_id_short)
-#creates an array containing every individual (renamed) ship name that we are interested in
-
-ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "log(prey weight) v. number of prey per stomach - separated by ship names",
-       x="log(prey weight)", y="No. prey per stomach") + 
-  geom_point(size=0.02, colour="red") +
-  theme(strip.text = element_text(size = 5)) + 
-  facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
-```
-
-These six graphs show a range of unusual looking points:
-
-1. $y \propto e^-x$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
-2. lots of observations for single prey weights for LUC and CLYDE
-3. lots of the same no. of prey per stomach observations for HIDDINK.
-4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
-
-Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
 
 # Prey and predator weight relation
 ```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
@@ -508,38 +512,79 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 
 # Introducing a mixed effects model
 
-## Trialing differnt models
+## Building up the model
 
-```{r mixed, echo=TRUE}
-a <- lmer(lppmr ~ prey_weight_g + (1|haul_id_short), data = renamed_df, REML=FALSE)
+```{r forming models, echo=TRUE}
+renamed_df %>% 
+    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    geom_line(size=1) + theme_classic()
+
+null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
+#the 'null' model has no predictors (i.e. no linear effects)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
 
-b <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+renamed_df %>% 
+    mutate(lppmr = fitted(null)) %>% 
+    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) +
+    theme_classic() +
+    geom_line(size=1) 
 
-c <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle) + (1|year), data = renamed_df, REML=FALSE)
+one <- lmer(lppmr ~ lprey_weight + (1|pred_species), data = renamed_df, REML=FALSE)
+#same slope for every effect (but varying intercept)
 
-d <- lmer(lppmr ~ pred_species + prey_weight_g + (1|haul_id_short) + (1|ices_rectangle) + (1|year) + (1|no._prey_per_stmch), data = renamed_df, REML=FALSE)
+renamed_df %>% 
+    mutate(lppmr= fitted(one)) %>% 
+    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    theme_classic() +
+    geom_line(size=1) 
 
-summary(a)
-summary(b)
-summary(c)
-summary(d)
+#couldn't introduce (1+pred_species|haul_id_short) or (1+lprey_weight|haul_id_short)
+
+two <- lmer(lppmr ~ lprey_weight + (0+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+#Random intercept and random slope (independent)
+
+renamed_df %>% 
+    mutate(lppmr = fitted(two)) %>% 
+    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    theme_classic() +
+    geom_line(size=1) 
+
+
+three <- lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+#Random intercept and random slope (correlated)
+
+renamed_df %>% 
+    mutate(lppmr = fitted(three)) %>% 
+    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    theme_classic() +
+    geom_line(size=1) 
+
+anova(null,one,two,three)
+#comparing the four modles
+```
+
+Null model:
+
+$$
+    \log(\text{ppmr})_{ij} = \beta_{0j} + r_{ij} = \gamma_{00} + u_{oj} + r_{ij}
+$$
+
+$\gamma_{00}$ is the intercept.
+$u_{0j}$ is the effect of the random term (haul_id_short)
+$ r_{ij}$ is the error term.
+
+## Trialing different models
+
+```{r mixed, echo=TRUE}
+lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+
+lmer(lppmr ~ pred_species + lprey_weight + (1|haul_id_short) + (1|ices_rectangle) + (1|year), data = renamed_df, REML=FALSE)
 
 #anova(mod_all, mod_nofixed, mod_nopred, mod_nopred_wgt)
 #+ (1|data)
-
-
-f <- lmer(lppmr ~ lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
-summary(f)
-
-e <- lmer(lppmr ~ lprey_weight +pred_species + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
-summary(e)
-
-g <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
-summary(g)
 ```
 
-Mathematical representation of model f:
+Mathematical representation of model:
 
 $$
     \hat{\log(\text{ppmr})}_{i} = \beta_{0j[i]} + \beta_{1j[i]} \times \hat{\text{lprey_weight}_{i}} + \epsilon
@@ -553,17 +598,11 @@ The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id 
 
 The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
 
-```{r misc., echo=TRUE}
-one <- lmer(lppmr ~ pred_species + lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
-two <- lmer(lppmr ~ pred_species + lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
-
-summary(one)
-summary(two)
-
-anova(one,two)
+```{r misc.}
+d <- lmer(lppmr ~ pred_species + lprey_weight + (1+pred_species|haul_id_short), data = renamed_df, REML=FALSE)
+summary(d)
 ```
 
-By comparing the AIC and BIC values, we can see that the final model is the most effective.
 
 ## Adding alterations and weighting to the models
 
@@ -594,9 +633,11 @@ But, the error term (standard error) roughly increases as more random effects ar
 
 Fixed effect: log(ppmr) (the main effect we are tracking)
 
-Random effects: haul_id_short, year, ices_rectangle, no. prey per stomach (?)
+Random effects: haul_id_short, year, ices_rectangle
 
-Linear (fixed) effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)\
+Linear effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
+
+Weightings: prey_weight_g, no._prey_per_stmch
 
 # Citations
 
