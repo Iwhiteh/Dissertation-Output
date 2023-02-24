@@ -173,7 +173,7 @@ ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) +
 
 These six graphs show a range of unusual looking points:
 
-1. $y \propto e^-x$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
+1. $y \propto e^{-x}$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
 2. lots of observations for single prey weights for LUC and CLYDE
 3. lots of the same no. of prey per stomach observations for HIDDINK.
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
@@ -589,11 +589,11 @@ d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangl
 
 e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 
-hist(resid(a))
-hist(resid(b))
-hist(resid(c))
-hist(resid(d))
-hist(resid(e))
+hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
+hist(resid(b), border='green', col="transparent", add=TRUE)
+hist(resid(c), border='blue', col="transparent", add=TRUE)
+hist(resid(d), border='black', col="transparent", add=TRUE)
+hist(resid(e), border='yellow', col="transparent", add=TRUE)
 
 print(VarCorr(a),comp="Variance")
 #Only prints the variance estimates for the random effects
@@ -626,21 +626,6 @@ The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id 
 
 The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
 
-## Adding weighting to the models
-
-```{r weighted mixed effects models, echo=TRUE}
-weight_mixed <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
-
-#weighting observations by prey_weight_g
-two <- update(weight_mixed, weights = prey_weight_g)
-summary(two)
-
-#weighting observations by no._prey_per_stmch
-three <- update(weight_mixed, weights = no._prey_per_stmch)
-summary(three)
-
-anova(two,three)
-```
 
 Variance of the groups decreases as other random effects are added to the models.
 But, the error term (standard error) roughly increases as more random effects are added to the model.
@@ -652,6 +637,31 @@ Random effects: haul_id_short, year, ices_rectangle
 Linear effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
 
 Weightings: prey_weight_g, no._prey_per_stmch
+
+
+
+## Adding weighting to the models
+
+```{r weighted mixed effects models, echo=TRUE}
+#Do we need weighting? Bc it's not a density plot
+
+trial_df <- data.frame(lppmr = 10:5,                
+                    lprey_weight = letters[1:6],
+                    prey_weight_g = "x",
+                    no._prey_per_stmch = "y")
+          
+weight_mixed <- lmer(lppmr ~ lprey_weight, data = herringDF, REML=FALSE)
+
+#weighting observations by prey_weight_g
+two <- update(weight_mixed, weights = prey_weight_g)
+summary(two)
+
+#weighting observations by no._prey_per_stmch
+three <- update(weight_mixed, weights = no._prey_per_stmch)
+summary(three)
+
+anova(two,three)
+```
 
 # Citations
 
