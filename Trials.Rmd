@@ -73,7 +73,6 @@ renamed_df = df %>%
 species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
                      "Horse Mackerel", "Mackerel", "Megrim", "Monkfish", "Norway Pout",  "Plaice",
                      "Poor Cod", "Sole", "Sprat", "Whiting")
-species_list
 #Creates an array called 'species_list', which is list of the predator species we are focusing on in this project
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
@@ -108,7 +107,7 @@ There are some other column names which are useful to note:
 
 # Distribution of prey type eaten for each predator
 
-```{r r distribution of prey, echo=TRUE}
+```{r distribution of prey, echo=TRUE}
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   geom_bar(stat="count", width=0.7) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
@@ -179,6 +178,197 @@ These six graphs show a range of unusual looking points:
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
 
 Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
+
+
+# Prey and predator weight relation
+```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
+#message=FALSE means some output messages aren't printed in the knitted HTML document
+
+ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
+  labs(title = "log(Predator mass) v. log(prey mass) plot", 
+       x="log(Prey mass)", y="log(Predator mass)") + 
+  geom_hex(bins = 50) +
+  scale_fill_gradient2(low = "black", mid="orange", high = "red", midpoint=600) +
+  stat_smooth(method='lm', se=FALSE, colour="blue")
+
+# stat_smooth adds a line of best fit plotted through the points
+# method='lm' ensures it is a straight line, i.e. a linear model
+# se=FAlSE creates only a single line, with no error of margin included
+
+#geom_hex creates "bins" in the data where the density is calculated over
+#bins=50 means that there are 50 "bins" in the horizontal direction and 50 in the vertical
+#scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
+
+slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
+paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2])
+
+# coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
+# The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
+```
+
+We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
+
+$$
+ \log (\text{pred weight}) = m \times \text{log(prey weight)} + c
+$$
+
+Where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
+
+Taking the exponential of both sides,
+
+$$
+  \text{pred weight} = \exp({{m}\times{\log(\text{prey weight})}}) + \log(D)
+$$
+where log(D) = c. 
+
+Finally,
+
+$$
+  \text{pred weight} = \text{prey weight}^m \times D
+$$
+
+Hence, we want m=1 to show that pred weight proportional to prey weight (as expected).
+
+For this graph, the slope is not equal to one. However, this graph is plotted over the entire data set and includes values from all of the available predator species.
+
+Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey weight for each specific species.
+
+## Predator v. prey weight plot, separated by predator species
+
+```{r sep by pred species, echo=TRUE, message=FALSE}
+ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
+  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", 
+       x="log(prey mass)", y="log(pred. mass)") +
+  geom_point(size=0.2) + 
+  facet_wrap(~pred_species, scale="free_y") + 
+  theme(strip.text = element_text(size = 10)) +
+  stat_smooth (method='lm', se=FALSE, colour="red")
+```
+
+## Gradients of the plots for each predator species
+
+```{r pvp gradients, echo=TRUE}
+i <- 1
+species_grad = c()
+#setting i=1 for the while loop
+#and creating an empty vector called 'species_grad' to hold data
+
+while(i<=length(species_list)){
+  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
+  grad <- coef(lm((species_df$lpred_weight)~(species_df$lprey_weight)))
+  species_grad[i] <- grad[2]
+  i=i+1
+}
+
+#'while' means that this function repeats through the length of 'species_list' until all predator species are accounted for
+#i=i+1 increases the value of i each time through this loop to motivate this repeat
+#this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
+
+pvp_grads <- data.frame(pred_species=c(species_list),
+                        gradient=c(species_grad))
+
+kable(pvp_grads)
+#creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
+#each row contains the name of some individual predator species and its associated gradient
+#kable prints the information in the pvp_grads
+```
+
+Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality for each specific species.
+
+We are wanting gradient=1 for proportionality. This is only true (to 1 significant figure) for the species Cod, European Hake, Monkfish and Whiting. Although this is a very limited number of the predator species, the assumption that the predator and prey masses are proportional is a reasonable one, so we will continue wiht this assumption.
+
+# Predator weight against ppmr
+
+## Plotting predator weight against ppmr, separated by predator species
+
+```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
+ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
+  geom_point(size=0.001) +
+  labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
+  stat_smooth (method='lm', se=FALSE) + 
+  facet_wrap(~pred_species, scale="free_y")
+```
+
+Graphing log(pred mass) v. log(ppmr) for individual predator species to see if the predator mass related to the ppmr. 
+
+$$
+    \log(\text{pred mass}) = m \times \log (\text{prey mass}) + c
+$$
+
+where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
+
+We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr) (and hence the ppmr is independent of the predator mass for a certain species).
+
+
+## Gradients of the plots
+
+```{r ppmrvp gradients, echo=TRUE}
+species_grad_ppmr=c()
+j <- 1
+#creates an empty vector called 'species_grad_ppmr'
+#setting j=1 for the while loop
+
+while(j<=length(species_list)){
+  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[j]))
+  grad <- coef(lm((species_df$lppmr)~(species_df$lpred_weight)))
+  species_grad_ppmr[j] <- grad[2]
+  j=j+1
+}
+
+ppmrvp_grads <- data.frame(pred_species=c(species_list),
+                        gradient=c(species_grad_ppmr))
+
+kable(ppmrvp_grads)
+```
+
+For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euorpean Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
+
+## Different weightings
+
+```{r poor cod, echo=TRUE, message=FALSE}
+species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
+#creating a data frame only containing observations where the predator species is poor cod.
+
+ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
+  geom_point(size=0.5) +
+  labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
+  facet_wrap(~pred_species, scale="free_y") + 
+  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), method='lm', se=FALSE) +
+  stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
+  stat_smooth(aes(weight=prey_weight_g, colour='by prey bio'), method='lm', se=FALSE) +
+  stat_summary(fun.data=mean_se, geom="linerange") +
+  scale_colour_manual(name="Weightings",
+                     values=c('by no. of prey in stomach'='blue', 
+                              'no weighting'='red', 'by prey bio'='green'))
+# se=FALSE doesn't add an area of error around the LOBF 
+# fun.data=mean_se calculates the mean and standard error for each point
+# linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calcuated in 'fun.data=mean_se')
+
+paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:")
+
+#weighted by number of prey per stomach
+perstmch_weighting <- 
+  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
+paste("i) Weighted by no prey in the stomach:", perstmch_weighting[2])
+
+#no weighting
+no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
+paste("ii) No weighting in the calculation:", no_weighting[2])
+
+#weighted by prey biomass
+biomass_weighting <- 
+  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
+paste("iii) Weighted by prey biomass:", biomass_weighting[2])
+```
+
+
+Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
+
+1. blue: by number of prey per stomach
+2. red: no weighting in the LOBF
+3. green: by prey biomass
+
+When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope=0) is true when looking at a prey biomass weighting.
 
 # Average PPMR for individual species
 
@@ -320,196 +510,6 @@ There is a difference in expected and actual prey biomass weighted mean of 0.305
 
 Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
-
-
-# Prey and predator weight relation
-```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
-#message=FALSE means some output messages aren't printed in the knitted HTML document
-
-ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  labs(title = "log(Predator mass) v. log(prey mass) plot", 
-       x="log(Prey mass)", y="log(Predator mass)") + 
-  geom_hex(bins = 50) +
-  scale_fill_gradient2(low = "black", mid="orange", high = "red", midpoint=600) +
-  stat_smooth(method='lm', se=FALSE, colour="blue")
-
-# stat_smooth adds a line of best fit plotted through the points
-# method='lm' ensures it is a straight line, i.e. a linear model
-# se=FAlSE creates only a single line, with no error of margin included
-
-#geom_hex creates "bins" in the data where the density is calculated over
-#bins=50 means that there are 50 "bins" in the horizontal direction and 50 in the vertical
-#scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
-
-slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
-paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2])
-
-# coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
-# The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
-```
-
-We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
-
-$$
- \log (\text{pred weight}) = m \times \text{log(prey weight)} + c
-$$
-
-Where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
-
-Taking the exponential of both sides,
-
-$$
-  \text{pred weight} = \exp({{m}\times{\log(\text{prey weight})}}) + \log(D)
-$$
-where log(d) = c. 
-
-Finally,
-
-$$
-  \text{pred weight} = \text{prey weight}^m \times D
-$$
-
-Hence, we want m=1 to show that pred weight proportional to prey weight (as expected).
-
-For this graph, the slope is not equal to one. However, this graph is plotted over the entire data set and includes values from all of the available predator species.
-
-Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey weight for each specific species.
-
-## Predator v. prey weight plot, separated by predator species
-
-```{r sep by pred species, echo=TRUE, message=FALSE}
-ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", 
-       x="log(prey mass)", y="log(pred. mass)") +
-  geom_point(size=0.2) + 
-  facet_wrap(~pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 10)) +
-  stat_smooth (method='lm', se=FALSE, colour="red")
-```
-
-## Gradients of the plots for each predator species
-
-```{r pvp gradients, echo=TRUE}
-i <- 1
-species_grad =c()
-#setting i=1 for the while loop
-
-while(i<=length(species_list)){
-  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
-  grad <- coef(lm((species_df$lpred_weight)~(species_df$lprey_weight)))
-  species_grad[i] <- grad[2]
-  i=i+1
-}
-#'while' means that this function repeats through the length of 'species_list' until all predator species are accounted for
-#i=i+1 increases the value of i each time through this loop to motivate this repeat
-#this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
-
-pvp_grads <- data.frame(pred_species=c(species_list),
-                        gradient=c(species_grad))
-
-kable(pvp_grads)
-#creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
-#each row contains the name of some individual predator species and its associated gradient
-#kable prints the information in the pvp_grads
-```
-
-Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality for each specific species.
-
-We are wanting gradient=1 for proportionality. This is only (approximately) true for the species Cod and Monkfish. Although this is a very limited number of the predator species, the assumption that the predator and prey masses are proportional is a reasonable one, so we will continue wiht this assumption.
-
-# Predator weight against ppmr
-
-## Plotting predator weight against ppmr, separated by predator species
-
-```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
-ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
-  geom_point(size=0.001) +
-  labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
-  stat_smooth (method='lm', se=FALSE) + 
-  facet_wrap(~pred_species, scale="free_y")
-```
-
-Graphing log(pred mass) v. log(ppmr) for individual predator species to see if the predator mass related to the ppmr. 
-
-$$
-    \log(\text{pred mass}) = m \times \log (\text{prey mass}) + c
-$$
-
-where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
-
-We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr) (and hence the ppmr is independent of the predator mass for a certain species).
-
-
-## Gradients of the plots
-
-```{r ppmrvp gradients, echo=TRUE}
-species_grad_ppmr=c()
-j <- 1
-#creates an empty vector called 'species_grad_ppmr'
-#setting j=1 for the while loop
-
-while(j<=length(species_list)){
-  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[j]))
-  grad <- coef(lm((species_df$lppmr)~(species_df$lpred_weight)))
-  species_grad_ppmr[j] <- grad[2]
-  j=j+1
-}
-
-ppmrvp_grads <- data.frame(pred_species=c(species_list),
-                        gradient=c(species_grad_ppmr))
-
-kable(ppmrvp_grads)
-```
-
-For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euorpean Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
-
-## Different weightings
-
-```{r poor cod, echo=TRUE, message=FALSE}
-species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
-#creating a data frame only containing observations where the predator species is poor cod.
-
-ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
-  geom_point(size=0.5) +
-  labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
-  facet_wrap(~pred_species, scale="free_y") + 
-  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), method='lm', se=FALSE) +
-  stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
-  stat_smooth(aes(weight=prey_weight_g, colour='by prey bio'), method='lm', se=FALSE) +
-  stat_summary(fun.data=mean_se, geom="linerange") +
-  scale_colour_manual(name="Weightings",
-                     values=c('by no. of prey in stomach'='blue', 
-                              'no weighting'='red', 'by prey bio'='green'))
-# se=FALSE doesn't add an area of error around the LOBF 
-# fun.data=mean_se calculates the mean and standard error for each point
-# linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calcuated in 'fun.data=mean_se')
-
-paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:")
-
-#weighted by number of prey per stomach
-perstmch_weighting <- 
-  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
-paste("i) Weighted by no prey in the stomach:", perstmch_weighting[2])
-
-#no weighting
-no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
-paste("ii) No weighting in the calculation:", no_weighting[2])
-
-#weighted by prey biomass
-biomass_weighting <- 
-  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
-paste("iii) Weighted by prey biomass:", biomass_weighting[2])
-```
-
-
-Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
-
-1. blue: by number of prey per stomach
-2. red: no weighting in the LOBF
-3. green: by prey biomass
-
-When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope=0) is true when looking at a prey biomass weighting.
-
 # Introducing a mixed effects model
 
 ## Building up the model
@@ -639,28 +639,37 @@ Linear effects: pred_species, prey_weight_g (what we assume will affect the fixe
 Weightings: prey_weight_g, no._prey_per_stmch
 
 
+## Misc. trials
+
+```{r misc. trials}
+by_species <- renamed_df %>% 
+  group_by(pred_species) %>% 
+  nest()
+by_species
+```
+
 
 ## Adding weighting to the models
 
 ```{r weighted mixed effects models, echo=TRUE}
 #Do we need weighting? Bc it's not a density plot
 
-trial_df <- data.frame(lppmr = 10:5,                
-                    lprey_weight = letters[1:6],
-                    prey_weight_g = "x",
-                    no._prey_per_stmch = "y")
+#trial_df <- data.frame(lppmr = 10:5,                
+#                 prey_weight_g = "x",
+#                 lprey_weight = letters[1:6],
+#                 no._prey_per_stmch = "y")
           
-weight_mixed <- lmer(lppmr ~ lprey_weight, data = herringDF, REML=FALSE)
+#weight_mixed <- lmer(lppmr ~ lprey_weight, data = herringDF, REML=FALSE)
 
 #weighting observations by prey_weight_g
-two <- update(weight_mixed, weights = prey_weight_g)
-summary(two)
+#two <- update(weight_mixed, weights = prey_weight_g)
+#summary(two)
 
 #weighting observations by no._prey_per_stmch
-three <- update(weight_mixed, weights = no._prey_per_stmch)
-summary(three)
+#three <- update(weight_mixed, weights = no._prey_per_stmch)
+#summary(three)
 
-anova(two,three)
+#anova(two,three)
 ```
 
 # Citations
