@@ -512,24 +512,33 @@ Therefore, we can continue with the assumption that there is a difference in the
 
 # Introducing a mixed effects model
 
-## Building up the model
+## Building up the model {.tabset}
 
-```{r forming models, echo=TRUE}
+### Basic Linear model
+
+```{r linear model}
 renamed_df %>% 
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_line(size=1) + theme_classic()
+```
 
+### Null
+
+```{r null model}
 null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
 #the 'null' model has no predictors (i.e. no linear effects)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
-#Generally: lmer(fixed ~ (1|random) + linear)
 
 renamed_df %>% 
     mutate(lppmr = fitted(null)) %>% 
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) +
     theme_classic() +
     geom_line(size=1) 
+```
 
+### First trial
+
+```{r first}
 one <- lmer(lppmr ~ lprey_weight + (1|pred_species), data = renamed_df, REML=FALSE)
 #same slope for every effect (but varying intercept)
 
@@ -538,9 +547,11 @@ renamed_df %>%
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
+```
 
-#couldn't introduce (1+pred_species|haul_id_short) or (1+lprey_weight|haul_id_short)
+### Second trial
 
+```{r second}
 two <- lmer(lppmr ~ lprey_weight + (0+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (independent)
 
@@ -549,8 +560,10 @@ renamed_df %>%
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
+```
 
-
+### Third trial
+```{r third}
 three <- lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (correlated)
 
@@ -559,13 +572,19 @@ renamed_df %>%
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
-
-anova(null,one,two,three)
-#comparing the four models
 ```
 
-Null model:
+```{r forming models, echo=TRUE}
+anova(null,one,two,three)
+#comparing the four models
 
+#(1+lprey_weight|pred_species)
+#(1+pred_species|haul_id_short) --> doesn't compile?
+#couldn't introduce (1+pred_species|haul_id_short) or (1+lprey_weight|haul_id_short)
+```
+
+
+Null model:
 $$
     \log(\text{ppmr})_{ij} = \beta_{0j} + r_{ij} = \gamma_{00} + u_{oj} + r_{ij}
 $$
@@ -574,43 +593,67 @@ $\gamma_{00}$ is the intercept.
 $u_{0j}$ is the effect of the random term (haul_id_short)
 $ r_{ij}$ is the error term.
 
-## Trialing different models
+## Trialing different models {.tabset}
 
-```{r mixed, echo=TRUE}
+### Trial a
+
+```{r trial a}
 a <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
-
-b <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
-
-#(1+lprey_weight|pred_species)
-
-c <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
-
-d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
-
-e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
-
+a
 hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
-hist(resid(b), border='green', col="transparent", add=TRUE)
-hist(resid(c), border='blue', col="transparent", add=TRUE)
-hist(resid(d), border='black', col="transparent", add=TRUE)
-hist(resid(e), border='yellow', col="transparent", add=TRUE)
-
+#Creates a histogram of the distribution of the residuals
 print(VarCorr(a),comp="Variance")
 #Only prints the variance estimates for the random effects
-print(VarCorr(b),comp="Variance")
-print(VarCorr(c),comp="Variance")
-print(VarCorr(d),comp="Variance")
-print(VarCorr(e),comp="Variance")
-#Variance increases??
-
 AIC(a)
-AIC(b)
-AIC(c)
-AIC(d)
-AIC(d)
-AIC(e)
-#AIC decreases throughout
+#Prints the AIC value for this model
 ```
+
+### Trial b
+
+```{r trial b}
+b <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
+b
+hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
+print(VarCorr(b),comp="Variance")
+AIC(b)
+```
+
+### Trial c
+
+```{r trial c}
+c <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+c
+hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
+print(VarCorr(c),comp="Variance")
+AIC(c)
+```
+
+### Trial d
+
+```{r trial c}
+d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
+d
+hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
+print(VarCorr(d),comp="Variance")
+AIC(d)
+```
+
+
+### Trial e
+
+```{r trial c}
+e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+e
+hist(resid(e), border='red', col="transparent", main = paste("Histogram of residuals" ))
+print(VarCorr(e),comp="Variance")
+AIC(e)
+```
+
+Outputs:
+- standard deviation for the random effects and residuals (want low values)
+- no. of observations
+- fixed effect, i.e. output of a linear model
+- frequency plot of the residuals (want clustered around resid=0)
 
 Mathematical representation of model:
 
@@ -626,9 +669,10 @@ The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id 
 
 The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
 
-
 Variance of the groups decreases as other random effects are added to the models.
 But, the error term (standard error) roughly increases as more random effects are added to the model.
+
+
 
 Fixed effect: log(ppmr) (the main effect we are tracking)
 
@@ -636,17 +680,7 @@ Random effects: haul_id_short, year, ices_rectangle
 
 Linear effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
 
-Weightings: prey_weight_g, no._prey_per_stmch
-
-
-## Misc. trials
-
-```{r misc. trials}
-by_species <- renamed_df %>% 
-  group_by(pred_species) %>% 
-  nest()
-by_species
-```
+Weightings: prey_weight_g, no._prey_per_stmch (do we need??)
 
 
 ## Adding weighting to the models
