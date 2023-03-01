@@ -6,6 +6,7 @@ output:
     toc: true
     number_sections: true
     code_folding: hide
+    theme: cerulean
 ---
 
 ```{r setup, echo=TRUE, message=FALSE}
@@ -516,7 +517,9 @@ Therefore, we can continue with the assumption that there is a difference in the
 
 ### Basic Linear model
 
-```{r linear model}
+With $\log(\text{prey_weight}) = m \times \log(\text{pred_species}) + c
+
+```{r linear model, echo=TRUE}
 renamed_df %>% 
     ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_line(size=1) + theme_classic()
@@ -524,7 +527,11 @@ renamed_df %>%
 
 ### Null
 
-```{r null model}
+Fixed effects: no fixed effects
+
+Renamed effects: pred_species
+
+```{r null model, echo=TRUE}
 null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
 #the 'null' model has no predictors (i.e. no linear effects)
 #REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
@@ -536,9 +543,28 @@ renamed_df %>%
     geom_line(size=1) 
 ```
 
+Mathematical representation:
+$$
+    \log(\text{ppmr})_{ij} = \beta_{0} + S_{0[j]} + \epsilon_{ij}
+$$
+
+This model has the following variables:
+\begin{itemize}
+  * $i$ is the group
+  * $j$ is the item
+  * $\beta_{0}$ is the intercept term (grand mean)
+  * $S_{0[j]}$ is the effect of the random term (pred_species)
+  * $\epsilon_{ij}$ is the error term.
+\end{itemize}
+
+
 ### First trial
 
-```{r first}
+Fixed effects: lprey_weight
+
+Renamed effects: pred_species
+
+```{r first, echo=TRUE}
 one <- lmer(lppmr ~ lprey_weight + (1|pred_species), data = renamed_df, REML=FALSE)
 #same slope for every effect (but varying intercept)
 
@@ -551,7 +577,11 @@ renamed_df %>%
 
 ### Second trial
 
-```{r second}
+Fixed effects: lprey_weight
+
+Renamed effects: pred_species (random slope and fixed intercept; varies w.r.t lprey_weight)
+
+```{r second, echo=TRUE}
 two <- lmer(lppmr ~ lprey_weight + (0+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (independent)
 
@@ -563,7 +593,12 @@ renamed_df %>%
 ```
 
 ### Third trial
-```{r third}
+
+Fixed effects: lprey_weight
+
+Renamed effects: pred_species (random slope and random intercept; varies w.r.t lprey_weight)
+
+```{r third, echo=TRUE}
 three <- lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (correlated)
 
@@ -574,6 +609,8 @@ renamed_df %>%
     geom_line(size=1) 
 ```
 
+### Comparing the model
+
 ```{r forming models, echo=TRUE}
 anova(null,one,two,three)
 #comparing the four models
@@ -583,139 +620,133 @@ anova(null,one,two,three)
 #couldn't introduce (1+pred_species|haul_id_short) or (1+lprey_weight|haul_id_short)
 ```
 
-
-Null model:
-$$
-    \log(\text{ppmr})_{ij} = \beta_{0} + S_{0[j]} + \epsilon_{ij}
-$$
-
-This model has the following variables:
-\begin{itemize}
-  \item $i$ is the group
-  \item $j$ is the item
-  \item $\beta_{0}$ is the intercept term (grand mean)
-  \item $S_{0[j]}$ is the effect of the random term (pred_species)
-  \item $\epsilon_{ij}$ is the error term.
-\end{itemize}
-
-Model e:
-$$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{prey weight})_{j} + 
-                \beta_{2} (\text{predator species})_{j} + A_{0[j]} + B_{0[j]} + C_{0[j]} + \epsilon_{ij}
-$$
-
-This model has the following variables:
-\begin{itemize}
-  \item $i$ is the group
-  \item $j$ is the item
-  \item $\beta_{0}$ is the intercept term
-  \item $\beta_{1}$ is the fixed effect (slope) for $\log(\text{prey weight})$
-  \item $\beta_{2}$ is the fixed effect (slope) for $\text{predator species}$
-  \item $A_{0[j]}$ is the random intercept for item $i$ (dependent on the haul_id_short term), where $A_{0[j]}$ is normally distributed with a mean of $0$ and a standard deviation $omega_{00}$ (i.e. $I_{0[j]} \sim N(0,\omega_{A[00]}^2)$)
-  \item $B_{0[j]}$ dep. on the year term
-  \item $C_{0[j]}$ dep. on the ices_rectangle term
-  \item $\epsilon_{ij}$ is the residual/error term for each individual item
-\end{itemize}
-
-Values:
-\begin{itemize}
-  \item $\beta_{0} = 3.304181 $ (fixed effects -> intercept -> estimate)
-  \item $\beta_{1} = -0.758358$ (fixed effects -> lprey_weight -> estimate)
-  \item $\beta_{2} = $ [individual for each pred species??]
-  \item $\omega_{A[00]}} = 1.6472$ (random effects -> groups -> ices_rectangle -> std. dev.)   [s.d. for A, haul_id_short]
-  \item $\omega_{B[00]}} = 1.4235$ [s.d. for B, year]
-  \item $\omega_{C[00]}} = 0.4331$ [s.d. for C, ices_rectangle]
-  \item $\epsilon_{ij} = 1.0729$ (random effects -> groups -> residual -> std. dev.)
-\end{itemize}
-
 ## Trialing different models {.tabset}
+
+Here, all the random effects are modelled with a randomly distributed slope and intercept.
 
 ### Trial a
 
-```{r trial a}
+Fixed effects: lprey_weight
+
+Renamed effects: haul_id_short
+
+```{r trial a, echo=TRUE}
 a <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
 a
 hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
 #Creates a histogram of the distribution of the residuals
 print(VarCorr(a),comp="Variance")
 #Only prints the variance estimates for the random effects
-AIC(a)
+paste("AIC:", AIC(a))
 #Prints the AIC value for this model
 ```
 
 ### Trial b
 
-```{r trial b}
+Fixed effects: lprey_weight
+
+Renamed effects: haul_id_short, year
+
+```{r trial b, echo=TRUE}
 b <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
 b
 hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(b),comp="Variance")
-AIC(b)
+paste("AIC:", AIC(b))
 ```
 
 ### Trial c
 
-```{r trial c}
+Fixed effects: lprey_weight
+
+Renamed effects: haul_id_short, year, ices_rectangle
+
+```{r trial c, echo=TRUE}
 c <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 c
 hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(c),comp="Variance")
-AIC(c)
+paste("AIC:", AIC(c))
 ```
 
 ### Trial d
 
-```{r trial d}
+Fixed effects: lprey_weight
+
+Renamed effects: haul_id_short, year, ices_rectangle, pred_species
+
+```{r trial d, echo=TRUE}
 d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
 d
 hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(d),comp="Variance")
-AIC(d)
+paste("AIC:", AIC(d))
 ```
-
 
 ### Trial e
 
-```{r trial e}
+Fixed effects: lprey_weight, pred_species
+
+Renamed effects: haul_id_short, year, ices_rectangle
+
+```{r trial e, echo=TRUE}
 e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 e
 hist(resid(e), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(e),comp="Variance")
-AIC(e)
+paste("AIC:", AIC(e))
 ```
 
+Mathematical representation
+$$
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{prey weight})_{j} + 
+                \beta_{2} (\text{predator species})_{j} + A_{0[j]} + B_{0[j]} + 
+                C_{0[j]} + \epsilon_{ij}
+$$
+
+```{r values, echo=TRUE}
+values <- data.frame(
+            Variable=c('i', '$\beta_{0}$', '$\beta_{1}$', '$\beta_{2}$', 
+                       '$A_{0[j]}$', '$omega_{00}$', '$B_{0[j]}$', '$C_{0[j]}$',
+                       '$epsilon_{ij}$'),
+             Value=c(1,2,3,4,5,6,7,8,9))  
+
+values
+```
+
+This model has the following variables:
+
+Variable name |  Meaning            | Value       |  Where to find
+------------- | -----------         | -------     | -------------
+$i$           | the group           | -           | -
+$j$           | the item            | -           | -
+$\beta_{0}$   | the intercept term  |  3.304181   | fixed effects -> intercept -> estimate
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{prey weight})$ | -0.758358   | fixed effects -> lprey_weight -> estimat
+$\beta_{2}$   | the fixed effect for $\text{predator species}$| (?)  | -
+$A_{0[j]}$    | the random intercept for item $j$ (dependent on the haul_id_short term) | - | -
+$\omega_{A[00]}$ |  s.d. for A, haul_id_short | 1.6472 |random effects -> groups -> ices_rectangle -> std. dev.
+$B_{0[j]}$    | random intercept for dep. on the year term | -           | -
+$\omega_{B[00]}$ | [s.d. for B, year] |  1.4235   | -
+$\omega_{C[00]}$ | [s.d. for C, ices_rectangle] | 0.4331    | -
+$C_{0[j]}$    | dep. on the ices_rectangle term | -             | -
+$\epsilon_{ij}$ | the residual/error term for each individual item | 1.0729 | random effects -> groups -> residual -> std. dev.
+ 
+Note: 
+
+  * $A_{0[j]}$ is normally distributed with a mean of $0$ and a standard deviation $omega_{00}$ (i.e. $I_{0[j]} \sim N(0,\omega_{A[00]}^2)$)
+  * $\beta_{2} = $ should be individual for each pred species??
+
+## Outputs
+
 Outputs:
-- standard deviation for the random effects and residuals (want low values)
-- no. of observations
-- fixed effect, i.e. output of a linear model
-- frequency plot of the residuals (want clustered around resid=0)
 
-Mathematical representation of model:
-
-$$
-    \hat{\log(\text{ppmr})}_{i} = \beta_{0j[i]} + \beta_{1j[i]} \times \hat{\text{lprey_weight}_{i}} + \epsilon
-$$
-
-$i$ is the individual observation.
-$j$ is the haul_id.
-$\epsilon$ is a general error term.
-
-The lppmr for an observation ($i$) with lprey_weight=0 depends on their haul_id $\beta_{0j[i]}$, and the rate of change of this value also varies by haul_id  $\beta_{j[i]}$:
-
-The $\beta_{0[i]}$ term represents the intercept of the observation (which varies based on the haul_id).
+  * standard deviation for the random effects and residuals (want low values)
+  * no. of observations
+  * fixed effect, i.e. output of a linear model
+  * frequency plot of the residuals (want clustered around resid=0)
 
 Variance of the groups decreases as other random effects are added to the models.
 But, the error term (standard error) roughly increases as more random effects are added to the model.
-
-
-Fixed effect: log(ppmr) (the main effect we are tracking)
-
-Random effects: haul_id_short, year, ices_rectangle
-
-Linear effects: pred_species, prey_weight_g (what we assume will affect the fixed effect)
-
-Weightings: prey_weight_g, no._prey_per_stmch (do we need??)
-
 
 ## Adding weighting to the models
 
@@ -742,12 +773,8 @@ Weightings: prey_weight_g, no._prey_per_stmch (do we need??)
 
 # Citations
 
-```{r citations}
+```{r citations, echo=TRUE}
 #citation()
 
-#c("hexbin", "viridis", "RColorBrewer") %>%
-#  map(citation) %>%
-#  print(style = "text")
-
-# devtools::session_info()
+#devtools::session_info()
 ```
