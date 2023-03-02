@@ -522,7 +522,7 @@ Therefore, we can continue with the assumption that there is a difference in the
 
 ### Basic Linear model
 
-With $\log(\text{prey_weight}) = m \times \log(\text{pred_species}) + c
+With $\log(\text{prey_weight}) = m \times \log(\text{pred_species}) + c$
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
@@ -614,7 +614,7 @@ renamed_df %>%
     geom_line(size=1) 
 ```
 
-### Comparing the model
+### Comparing the models
 
 ```{r forming models, echo=TRUE}
 anova(null,one,two,three)
@@ -739,7 +739,7 @@ $\epsilon_{ij}$ | the residual/error term for each individual item | 1.0729 | ra
 Note: 
 
   * $A_{0[j]}$ is normally distributed with a mean of $0$ and a standard deviation $omega_{00}$ (i.e. $I_{0[j]} \sim N(0,\omega_{A[00]}^2)$)
-  * $\beta_{2} = $ should be individual for each pred species??
+  * Value of $\beta_{2} = $ should be individual for each pred species??
 
 ## Outputs
 
