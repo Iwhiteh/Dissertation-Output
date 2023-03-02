@@ -1,15 +1,20 @@
 ---
-title: 'Dissertation'
-author: 'Imogen Whitehead'
-output: 
+title: "Dissertation"
+author: "Imogen Whitehead"
+output:
   html_document:
-    toc: true
-    number_sections: true
+    number_sections: yes
     code_folding: hide
     theme: cerulean
+    toc: yes
 ---
 
 ```{r setup, echo=TRUE, message=FALSE}
+#number_sections: yes
+    #code_folding: hide
+    #theme: cerulean
+#html_document:
+
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE) 
