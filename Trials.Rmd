@@ -295,10 +295,10 @@ ggplot(data=renamed_df, aes(lpred_weight, lppmr)) +
   facet_wrap(~pred_species, scale="free_y")
 ```
 
-Graphing log(pred mass) v. log(ppmr) for individual predator species to see if the predator mass related to the ppmr. 
+Graphing $\log$(pred mass) v. $\log$(PPMR) for individual predator species to see if the predator mass related to the ppmr. 
 
 $$
-    \log(\text{pred mass}) = m \times \log (\text{prey mass}) + c
+    \log(\text{PPMR}) = m \times \log (\text{pred mass}) + c
 $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
@@ -436,7 +436,8 @@ paste("log(ppmr) mean, weighted by biomass of prey:", bio_herringmean)
 paste("Standard deviation of this:", bio_herringSD)
 
 ggplot(data = herringDF, aes(x=lppmr)) + 
-          labs(title = "log(ppmr) against biomass density for Herring, weighted by prey biomass", 
+          labs(title = "log(ppmr) against biomass density for Herring,
+               weighted by prey biomass", 
                x="log(PPMR)",y="Biomass density of observations") +
           geom_density(aes(weight = prey_weight_g), colour="blue") + 
           theme(plot.title = element_text(size=15)) + 
@@ -460,7 +461,8 @@ paste("log(ppmr) mean, weighted by number of observations:", no_herringmean)
 paste("Standard deviation of this:", no_herringSD)
 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
-          labs(title = "log(ppmr) against number density for Herring, weighted by no. of prey",
+          labs(title = "log(ppmr) against number density for Herring, 
+               weighted by no. of prey",
                x="log(PPMR)", y="No. density of observations") +
           geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
           theme(plot.title = element_text(size=15)) +
@@ -476,7 +478,7 @@ The curve with points weighted by the number of prey per stomach is plotted in r
 ```{r Herring combined graph, echo=TRUE} 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "log(ppmr) against biomass/number density for Herring,
-               with different weightings",
+               with various weightings",
                x="log(PPMR)", y="Number/biomass density of observations") +
           geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
           geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
@@ -554,13 +556,11 @@ $$
 $$
 
 This model has the following variables:
-\begin{itemize}
   * $i$ is the group
   * $j$ is the item
   * $\beta_{0}$ is the intercept term (grand mean)
   * $S_{0[j]}$ is the effect of the random term (pred_species)
   * $\epsilon_{ij}$ is the error term.
-\end{itemize}
 
 
 ### First trial
@@ -584,7 +584,7 @@ renamed_df %>%
 
 Fixed effects: lprey_weight
 
-Renamed effects: pred_species (random slope and fixed intercept; varies w.r.t lprey_weight)
+Renamed effects: pred_species (random slope and fixed intercept; varies with respect to (w.r.t.) lprey_weight)
 
 ```{r second, echo=TRUE}
 two <- lmer(lppmr ~ lprey_weight + (0+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
@@ -709,16 +709,6 @@ $$
                 C_{0[j]} + \epsilon_{ij}
 $$
 
-```{r values, echo=TRUE}
-values <- data.frame(
-            Variable=c('i', '$\beta_{0}$', '$\beta_{1}$', '$\beta_{2}$', 
-                       '$A_{0[j]}$', '$omega_{00}$', '$B_{0[j]}$', '$C_{0[j]}$',
-                       '$epsilon_{ij}$'),
-             Value=c(1,2,3,4,5,6,7,8,9))  
-
-values
-```
-
 This model has the following variables:
 
 Variable name |  Meaning            | Value       |  Where to find
@@ -738,7 +728,7 @@ $\epsilon_{ij}$ | the residual/error term for each individual item | 1.0729 | ra
  
 Note: 
 
-  * $A_{0[j]}$ is normally distributed with a mean of $0$ and a standard deviation $omega_{00}$ (i.e. $I_{0[j]} \sim N(0,\omega_{A[00]}^2)$)
+  * $A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
   * Value of $\beta_{2} = $ should be individual for each pred species??
 
 ## Outputs
