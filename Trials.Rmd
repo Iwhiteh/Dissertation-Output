@@ -56,7 +56,6 @@ df <- df[df$indiv_prey_weight != Inf, ]
 renamed_df = df %>% 
   mutate(pred_species = replace(pred_species, 
                                 pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
-#  mutate(pred_species = replace(pred_species, pred_species == "Capros apers", "Boarfish")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Gadus morhua", "Cod")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Limanda limanda", "Common Dab")) %>%
   mutate(pred_species = replace(pred_species, 
@@ -117,14 +116,15 @@ There are some other column names which are useful to note:
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   geom_bar(stat="count", width=0.7) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
-  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())  +
-  scale_fill_brewer(palette = "Dark2") +
-  labs(title = "Distribution of prey types for each predator", x="Prey type", y="Count")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Dark2", name = "Prey Type") +
+  labs(title = "Distribution of prey types for each predator species", x="Prey type",
+       y="Number of Observations")
 
 #geom_bar() creates a bar chart from the specified data
 #facet_wrap() means an individual bar chart is created for each individual predator species
-#'theme()' removes any words on the x-axis so the graphs are easier to understand
-#scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between
+#'theme()' adjusts the labels along the x-axis so they lie slightly angled to the vertical direction so they are easy to read
+#scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between, and renames the title of the key to show which colour means what
 ```
 
 These are individual bar charts showing the distribution of the type of prey each predator eats.
@@ -142,8 +142,8 @@ We can see that some predators eat a range of prey types (e.g. Whiting), while o
 # Most common prey weights
 ```{r log(prey weight) v. number of prey per stomach, echo=TRUE}
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
-      labs(title = "log(prey weight) v. number of prey per predator stomach", 
-       x="log(prey weight)", y="No. of prey per predator stomach") + 
+      labs(title = "Number of prey per predator stomach v. log(prey weight) ", 
+       x="log(prey weight)", y="Number of prey per predator stomach") + 
       geom_point(size=0.5)
 
 #geom_point() adds individual points which show individual recorded points
@@ -169,30 +169,65 @@ haul_list_interesting <- unique(interesting_haul$haul_id_short)
 #creates an array containing every individual (renamed) ship name that we are interested in
 
 ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "log(prey weight) v. number of prey per stomach - separated by ship names",
-       x="log(prey weight)", y="No. prey per stomach") + 
+  labs(title = "Number of prey per stomach v. log(prey weight) - separated by ship names",
+       x="log(prey weight)", y="Number of prey per stomach") + 
   geom_point(size=0.02, colour="red") +
-  theme(strip.text = element_text(size = 5)) + 
+  theme(strip.text = element_text(size = 10)) + 
   facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
 ```
 
 These six graphs show a range of unusual looking points:
 
 1. $y \propto e^{-x}$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
-2. lots of observations for single prey weights for LUC and CLYDE
-3. lots of the same no. of prey per stomach observations for HIDDINK.
+2. lots of observations for single prey weights for LUC and CLYDE (554)
+3. lots of the same no. of prey per stomach observations for HIDDINK.(27180)
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
+
+There are a number of other graphs which also provided potentially erroneous data, and the number of datapoints affected are as below:
+
+```{r no of obs, echo=TRUE}
+paste("Number of observations of type 1:", count(filter(renamed_df, haul_id_short=='END04')))
+
+paste("Number of observations of type 2:", count(filter(renamed_df, haul_id_short=='CLION09'|haul_id_short=='LUC'|haul_id_short=='UNITY'|haul_id_short=='CLYDE')))
+
+paste("Number of observations of type 3:", count(filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUCELLA'|haul_id_short=='BULLEN'|haul_id_short=='CIROL04'|haul_id_short=='CIROL10'|haul_id_short=='CLION03'|haul_id_short=='CLION07'|haul_id_short=='CLION12'|haul_id_short=='COREL02'|haul_id_short=='COREL06'|haul_id_short=='CORY04'|haul_id_short=='CYPRIS'|haul_id_short=='END02'|haul_id_short=='END12'|haul_id_short=='HEINCKE147'|haul_id_short=='HIDDINK'|haul_id_short=='OITHONA'|haul_id_short=='STRANDLINE'|haul_id_short=='TELLINA')))
+
+paste("Number of observations of type 4:", count(filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error')))
+```
 
 Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
 
-
 # Prey and predator weight relation
+
+We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
+
+$$
+ \log (\text{prey mass}) = m \times \text{log(predator mass)} + c ,
+$$
+
+where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
+
+Taking the exponential of both sides,
+
+$$
+  \text{prey mass} = \exp({{m}\times{\log(\text{predator mass})}}) + \log(D) ,
+$$
+where log(D) = c. 
+
+Finally,
+
+$$
+  \text{prey mass} = \text{predator mass}^m \times D
+$$
+
+Hence, we want m=1 to show that log(predator mass) is proportional to log(prey weight) (as expected).
+
 ```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
-ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  labs(title = "log(Predator mass) v. log(prey mass) plot", 
-       x="log(Prey mass)", y="log(Predator mass)") + 
+ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
+  labs(title = "log(prey mass) v. log(predator mass) plot", 
+       x="log(predator mass)", y="log(prey mass)") + 
   geom_hex(bins = 50) +
   scale_fill_gradient2(low = "black", mid="orange", high = "red", midpoint=600) +
   stat_smooth(method='lm', se=FALSE, colour="blue")
@@ -205,46 +240,23 @@ ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) +
 #bins=50 means that there are 50 "bins" in the horizontal direction and 50 in the vertical
 #scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
 
-slope <- coef(lm(renamed_df$lpred_weight~renamed_df$lprey_weight))
-paste("slope of the log(pred) v. log(prey) line of best fit:", slope[2])
+slope <- coef(lm(renamed_df$lprey_weight~renamed_df$lpred_weight))
+paste("slope of the log(prey mass) v. log(predator mass) line of best fit:", slope[2])
 
 # coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
 ```
 
-We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
-
-$$
- \log (\text{pred weight}) = m \times \text{log(prey weight)} + c
-$$
-
-Where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
-
-Taking the exponential of both sides,
-
-$$
-  \text{pred weight} = \exp({{m}\times{\log(\text{prey weight})}}) + \log(D)
-$$
-where log(D) = c. 
-
-Finally,
-
-$$
-  \text{pred weight} = \text{prey weight}^m \times D
-$$
-
-Hence, we want m=1 to show that pred weight proportional to prey weight (as expected).
-
 For this graph, the slope is not equal to one. However, this graph is plotted over the entire data set and includes values from all of the available predator species.
 
 Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey weight for each specific species.
 
-## Predator v. prey weight plot, separated by predator species
+## Prey v. predator mass plot, separated by predator species
 
 ```{r sep by pred species, echo=TRUE, message=FALSE}
-ggplot(data = renamed_df, aes(lprey_weight, lpred_weight)) + 
-  labs(title = "log(pred. mass) v. log(prey mass) separated by predator species", 
-       x="log(prey mass)", y="log(pred. mass)") +
+ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
+  labs(title = "log(prey. mass) v. log(pred mass), separated by predator species", 
+       x="log(pred. mass)", y="log(prey mass)") +
   geom_point(size=0.2) + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
@@ -261,7 +273,7 @@ species_grad = c()
 
 while(i<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
-  grad <- coef(lm((species_df$lpred_weight)~(species_df$lprey_weight)))
+  grad <- coef(lm((species_df$lprey_weight)~(species_df$lpred_weight)))
   species_grad[i] <- grad[2]
   i=i+1
 }
@@ -270,8 +282,8 @@ while(i<=length(species_list)){
 #i=i+1 increases the value of i each time through this loop to motivate this repeat
 #this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
 
-pvp_grads <- data.frame(pred_species=c(species_list),
-                        gradient=c(species_grad))
+pvp_grads <- data.frame("Predator Species"=c(species_list),
+                        Gradient=c(species_grad))
 
 kable(pvp_grads)
 #creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
@@ -282,6 +294,116 @@ kable(pvp_grads)
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality for each specific species.
 
 We are wanting gradient=1 for proportionality. This is only true (to 1 significant figure) for the species Cod, European Hake, Monkfish and Whiting. Although this is a very limited number of the predator species, the assumption that the predator and prey masses are proportional is a reasonable one, so we will continue wiht this assumption.
+
+# Specific PPMR calculations by different weightings for Herring species
+
+Here, we take only observations relating to the predator type Herring. This allows us to do more specific analysis about the shifted mean and begin to explain the maths behind this shifting.
+
+```{r Herring PPMR setup, echo=TRUE}
+herringDF <- renamed_df %>% 
+    filter(pred_species == fixed("Herring"))
+#creates a separate data set (called 'herringDF') only containing observations for the predator species 'Herring'
+```
+
+## Weighted by prey biomass
+
+```{r Prey biomass weighting, echo=TRUE} 
+bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
+bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
+
+#weighted.mean gives the arithmetic mean of log(ppmr), where datapoints are weighted by the prey weight of observations
+#similarly, wtd.var is the variance of log(ppmr), where the datapoints are also weighted by the prey weight
+#standard deviation is defined as the square root of the variance
+#na.rm=TRUE means any rows with missing values (values that equal 'na') aren't included in the mean/variance calculations, but are instead ignored
+
+paste("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
+paste("Standard deviation of this:", bio_herringSD)
+
+ggplot(data = herringDF, aes(x=lppmr)) + 
+          labs(title = "Density plot of log(ppmr) for Herring,
+               weighted by prey biomass", 
+               x="log(PPMR)",y="Biomass density of observations") +
+          geom_density(aes(weight = prey_weight_g), colour="blue") + 
+          theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) + 
+          stat_function(fun = dnorm, 
+                        args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
+          xlim(-5,17)
+
+#axis.text.y adjusts the size of the axis labels on the y-axis so they are most easily readable
+#stat_function adds a normal distribution curve (fun=dnorm) with a mean and standard deviation equal to what was calculated earlier for this data set
+#xlim sets limits for the x-axis so that all the necessary data points can be seen
+```
+
+The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
+
+## Weighted by number of prey
+
+```{r No of prey weighting, echo=TRUE} 
+no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
+no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
+#the mean and variance are both weighted by the number of prey
+
+paste("Mean valye of log(ppmr), weighted by number of observations:", no_herringmean)
+paste("Standard deviation of this:", no_herringSD)
+
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
+          labs(title = "Density plot of log(ppmr) for Herring, 
+               weighted by no. of prey",
+               x="log(PPMR)", y="No. density of observations") +
+          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
+          stat_function(fun = dnorm, 
+                        args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
+          xlim(0,25)
+#the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
+```
+
+The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
+
+## Combined graph
+
+```{r Herring combined graph, echo=TRUE} 
+ggplot(data = herringDF, aes(x=lppmr), group=1) + 
+          labs(title = "log(ppmr) against biomass/number density for Herring,
+               with various weightings",
+               x="log(PPMR)", y="Number/biomass density of observations") +
+          geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
+          geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
+          stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
+          stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
+          theme(plot.title = element_text(size=15)) +
+          scale_color_manual(name='Weightings',
+                     values=c('number of prey per stomach'='red', 'prey biomass'='blue')) +
+        xlim(-5,25) 
+
+#scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
+#each curve is given a name using 'aes(colour="")', and these are then given a specific colour using 'values='
+```
+
+This is a graph with both the the distribution of Herring log(PPMR) as weighted by prey biomass and number of prey plotted over each other (along with appropriately weighted normal distribution curves plotted over the top of each).
+
+Prey biomass weighted mean: 6.629177
+No. of prey weighted mean: 13.54102
+
+Prey biomass standard deviation: 2.3508789268221
+No. of prey standard deviation: 2.63330496940788
+
+The mean is shifted by 6.911843.
+
+The mathematics of shifted means for this difference in weighting is:
+
+$$
+  \text{weighted mean}_{\text{expected prey biomass}} = \text{weighted mean}_{\text{no. of prey }} - (\text{standard deviation}_{\text{no. of prey }})^2
+$$
+
+Hence, the expected result is:
+
+$$
+  \text{weighted mean}_{\text{actual prey biomass}} = 13.54102 - (2.63330496940788)^2 = 6.60672493809
+$$
+There is a difference in expected and actual prey biomass weighted mean of 0.30511806191. This is a fairly insignificant value, which suggests the shifting mean equations are relatively accurate for this data set with these weightings.
+
+Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
 # Predator weight against ppmr
 
@@ -410,113 +532,6 @@ These plots are weighted by the number pf prey per stomach. This means that data
 
 
 By looking at the two differently weighted graphs, it is clear to see that the plots are 'shifted' by some amount (e.g. the Blue Whiting when weighted by prey biomass has a mean log(ppmr) of roughly 4.8, and when weighted by number of prey this mean becomes roughly 7.5).
-
-# Specific PPMR calculations by different weightings for Herring species
-
-Here, we take only observations relating to the predator type Herring. This allows us to do more specific analysis about the shifted mean and begin to explain some of the maths behind this shifting.
-
-```{r Herring PPMR setup, echo=TRUE}
-herringDF <- renamed_df %>% 
-    filter(pred_species == fixed("Herring"))
-#creates a separate data set (called 'herringDF') only containing observations for the predator species 'Herring'
-```
-
-## Weighted by prey biomass
-
-```{r Prey biomass weighting, echo=TRUE} 
-bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
-bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
-
-#weighted.mean gives the arithmetic mean of log(ppmr), where datapoints are weighted by the prey weight of observations
-#similarly, wtd.var is the variance of log(ppmr), where the datapoints are also weighted by the prey weight
-#standard deviation is defined as the square root of the variance
-#na.rm=TRUE means any rows with missing values (values that equal 'na') aren't included in the mean/variance calculations, but are instead ignored
-
-paste("log(ppmr) mean, weighted by biomass of prey:", bio_herringmean)
-paste("Standard deviation of this:", bio_herringSD)
-
-ggplot(data = herringDF, aes(x=lppmr)) + 
-          labs(title = "log(ppmr) against biomass density for Herring,
-               weighted by prey biomass", 
-               x="log(PPMR)",y="Biomass density of observations") +
-          geom_density(aes(weight = prey_weight_g), colour="blue") + 
-          theme(plot.title = element_text(size=15)) + 
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
-          xlim(-5,17)
-
-#stat_function adds a normal distribution curve (fun=dnorm) with a mean and standard deviation equal to what was calculated earlier for this data set
-#xlim sets limits for the x-axis so that all the necessary data points can be seen
-```
-
-The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
-
-## Weighted by number of prey
-
-```{r No of prey weighting, echo=TRUE} 
-no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
-no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
-#the mean and variance are both weighted by the number of prey
-
-paste("log(ppmr) mean, weighted by number of observations:", no_herringmean)
-paste("Standard deviation of this:", no_herringSD)
-
-ggplot(data = herringDF, aes(x=lppmr), group=1) + 
-          labs(title = "log(ppmr) against number density for Herring, 
-               weighted by no. of prey",
-               x="log(PPMR)", y="No. density of observations") +
-          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
-          theme(plot.title = element_text(size=15)) +
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
-          xlim(0,25)
-#the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
-```
-
-The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
-
-## Combined graph
-
-```{r Herring combined graph, echo=TRUE} 
-ggplot(data = herringDF, aes(x=lppmr), group=1) + 
-          labs(title = "log(ppmr) against biomass/number density for Herring,
-               with various weightings",
-               x="log(PPMR)", y="Number/biomass density of observations") +
-          geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
-          geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
-          theme(plot.title = element_text(size=15)) +
-          scale_color_manual(name='Weightings',
-                     values=c('number of prey per stomach'='red', 'prey biomass'='blue')) +
-        xlim(-5,25) 
-
-#scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
-#each curve is given a name using 'aes(colour="")', and these are then given a specific colour using 'values='
-```
-
-This is a graph with both the the distribution of Herring log(PPMR) as weighted by prey biomass and number of prey plotted over each other (along with appropriately weighted normal distribution curves plotted over the top of each).
-
-Prey biomass weighted mean: 6.629177
-No. of prey weighted mean: 13.54102
-
-Prey biomass standard deviation: 2.3508789268221
-No. of prey standard deviation: 2.63330496940788
-
-The mean is shifted by 6.911843.
-
-The mathematics of shifted means for this difference in weighting is:
-
-$$
-  \text{weighted mean}_{\text{expected prey biomass}} = \text{weighted mean}_{\text{no. of prey }} - (\text{standard deviation}_{\text{no. of prey }})^2
-$$
-
-Hence, the expected result is:
-
-$$
-  \text{weighted mean}_{\text{actual prey biomass}} = 13.54102 - (2.63330496940788)^2 = 6.60672493809
-$$
-There is a difference in expected and actual prey biomass weighted mean of 0.30511806191. This is a fairly insignificant value, which suggests the shifting mean equations are relatively accurate for this data set with these weightings.
-
-Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
 # Introducing a mixed effects model
 
