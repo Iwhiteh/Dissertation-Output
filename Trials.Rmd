@@ -323,7 +323,7 @@ ggplot(data = herringDF, aes(x=lppmr)) +
           labs(title = "Density plot of log(ppmr) for Herring,
                weighted by prey biomass", 
                x="log(PPMR)",y="Biomass density of observations") +
-          geom_density(aes(weight = prey_weight_g), colour="blue") + 
+          geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) + 
           stat_function(fun = dnorm, 
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
@@ -343,18 +343,19 @@ no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch
 no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
 #the mean and variance are both weighted by the number of prey
 
-paste("Mean valye of log(ppmr), weighted by number of observations:", no_herringmean)
+paste("Mean value of log(ppmr), weighted by number of observations:", no_herringmean)
 paste("Standard deviation of this:", no_herringSD)
 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring, 
                weighted by no. of prey",
                x="log(PPMR)", y="No. density of observations") +
-          geom_density(aes(weight = no._prey_per_stmch), colour="red") + 
+          geom_density(aes(weight = no._prey_per_stmch), colour="green") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
           stat_function(fun = dnorm, 
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
           xlim(0,25)
+
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
 ```
 
@@ -364,17 +365,18 @@ The curve with points weighted by the number of prey per stomach is plotted in r
 
 ```{r Herring combined graph, echo=TRUE} 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
-          labs(title = "log(ppmr) against biomass/number density for Herring,
+          labs(title = "Density plot of log(ppmr) for Herring,
                with various weightings",
                x="log(PPMR)", y="Number/biomass density of observations") +
           geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
           geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
-          stat_function(fun = dnorm, args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
+          stat_function(fun = dnorm, 
+                        args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
+          stat_function(fun = dnorm, 
+                        args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
           theme(plot.title = element_text(size=15)) +
-          scale_color_manual(name='Weightings',
-                     values=c('number of prey per stomach'='red', 'prey biomass'='blue')) +
-        xlim(-5,25) 
+          scale_color_manual(name='Weightings', values=c('green', 'red')) +
+          xlim(-5,25) 
 
 #scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
 #each curve is given a name using 'aes(colour="")', and these are then given a specific colour using 'values='
@@ -401,18 +403,19 @@ Hence, the expected result is:
 $$
   \text{weighted mean}_{\text{actual prey biomass}} = 13.54102 - (2.63330496940788)^2 = 6.60672493809
 $$
+
 There is a difference in expected and actual prey biomass weighted mean of 0.30511806191. This is a fairly insignificant value, which suggests the shifting mean equations are relatively accurate for this data set with these weightings.
 
 Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
-# Predator weight against ppmr
+# Predator mass against ppmr
 
-## Plotting predator weight against ppmr, separated by predator species
+## Plotting predator mass against ppmr, separated by predator species
 
-```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
+```{r pred mass v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001) +
-  labs(title = "log(pred mass) v. log(ppmr) plot", x="log(Pred mass)", y="log(PPMR)") + 
+  labs(title = "log(PPMR) v. log(predator mass) plot", x="log(Pred mass)", y="log(PPMR)") + 
   stat_smooth (method='lm', se=FALSE) + 
   facet_wrap(~pred_species, scale="free_y")
 ```
@@ -459,20 +462,22 @@ species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 
 ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
-  labs(title = "log(pred mass) v. log(ppmr) plot: Poor Cod", x="log(Pred mass)", y="log(PPMR)") + 
+  labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
+       x="log(Pred mass)", y="log(PPMR)") + 
   facet_wrap(~pred_species, scale="free_y") + 
-  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), method='lm', se=FALSE) +
+  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), 
+              method='lm', se=FALSE) +
   stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
   stat_smooth(aes(weight=prey_weight_g, colour='by prey bio'), method='lm', se=FALSE) +
   stat_summary(fun.data=mean_se, geom="linerange") +
   scale_colour_manual(name="Weightings",
-                     values=c('by no. of prey in stomach'='blue', 
-                              'no weighting'='red', 'by prey bio'='green'))
+                     values=c('by no. of prey in stomach'='green', 
+                              'no weighting'='blue', 'by prey bio'='red'))
 # se=FALSE doesn't add an area of error around the LOBF 
 # fun.data=mean_se calculates the mean and standard error for each point
 # linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calcuated in 'fun.data=mean_se')
 
-paste("slope of the log(ppmr) v. log(pred_weight) line of best fit for poor cod:")
+paste("slope of the log(ppmr) v. log(predator weight) line of best fit for poor cod:")
 
 #weighted by number of prey per stomach
 perstmch_weighting <- 
@@ -502,10 +507,11 @@ When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, 
 
 Here, we are looking for the most common log(PPMR) for each individual species. This will be done by plotting log(PPMR) against the density of points, and weighting observations on different variables. By assuming these are normally distributed relations, there should be a 'peak' point of log(ppmr) which is where the mean/most common log(ppmr) value lies. We assume this will be different for different species of predator, i.e. each predator has a preferred ppmr value and hence each predator type has a preferred relative size of prey.
 
-##  Weighted by prey biomass:
+##  Weighted by prey biomass
 ```{r ave PPMR biomass, echo=TRUE}
 ggplot(data = renamed_df, aes(x=lppmr)) + 
-  labs(title = "log(PPMR) v. biomass density of prey", x="log(PPMR)", y="Biomass density of prey") +
+  labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
+       x="log(PPMR)", y="Biomass density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
   geom_density(aes(weight = prey_weight_g), colour="red")
@@ -517,19 +523,19 @@ ggplot(data = renamed_df, aes(x=lppmr)) +
 
 These plots are weighted by the prey biomass. This means that we are looking at the distribution of prey biomass across values of log(PPMR), so points with a larger biomass are prioritised/weighted more than those with a smaller biomass.
 
-## Weighted by number of prey:
+## Weighted by number of prey
 ```{r ave PPMR prey no., echo=TRUE}
 ggplot(data = renamed_df, aes(x=lppmr)) + 
-  labs(title = "log(PPMR) v. number density of prey", x="log(PPMR)", y="Number density of prey") +
+  labs(title = "Density plot of log(PPMR), weighted by number density of prey", 
+       x="log(PPMR)", y="Number density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = no._prey_per_stmch), colour="red")
+  geom_density(aes(weight = no._prey_per_stmch), colour="green")
 
 #weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per stomach
 ```
 
 These plots are weighted by the number pf prey per stomach. This means that data points with a larger number of prey per stomach are prioritised/weighted more than those with a smaller number of prey per stomach.
-
 
 By looking at the two differently weighted graphs, it is clear to see that the plots are 'shifted' by some amount (e.g. the Blue Whiting when weighted by prey biomass has a mean log(ppmr) of roughly 4.8, and when weighted by number of prey this mean becomes roughly 7.5).
 
