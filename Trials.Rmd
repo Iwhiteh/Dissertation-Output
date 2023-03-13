@@ -255,8 +255,8 @@ Instead, separate the plots by predator species to see if there is some proporti
 
 ```{r sep by pred species, echo=TRUE, message=FALSE}
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
-  labs(title = "log(prey. mass) v. log(pred mass), separated by predator species", 
-       x="log(pred. mass)", y="log(prey mass)") +
+  labs(title = "log(prey mass) v. log(predator mass), separated by predator species", 
+       x="log(predator mass)", y="log(prey mass)") +
   geom_point(size=0.2) + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
@@ -316,9 +316,6 @@ bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm
 #standard deviation is defined as the square root of the variance
 #na.rm=TRUE means any rows with missing values (values that equal 'na') aren't included in the mean/variance calculations, but are instead ignored
 
-paste("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
-paste("Standard deviation of this:", bio_herringSD)
-
 ggplot(data = herringDF, aes(x=lppmr)) + 
           labs(title = "Density plot of log(ppmr) for Herring,
                weighted by prey biomass", 
@@ -332,6 +329,9 @@ ggplot(data = herringDF, aes(x=lppmr)) +
 #axis.text.y adjusts the size of the axis labels on the y-axis so they are most easily readable
 #stat_function adds a normal distribution curve (fun=dnorm) with a mean and standard deviation equal to what was calculated earlier for this data set
 #xlim sets limits for the x-axis so that all the necessary data points can be seen
+
+paste("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
+paste("Standard deviation of this:", bio_herringSD)
 ```
 
 The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
@@ -342,9 +342,6 @@ The curve with points weighted by the prey biomass is plotted in blue, and a nor
 no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
 no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE))
 #the mean and variance are both weighted by the number of prey
-
-paste("Mean value of log(ppmr), weighted by number of observations:", no_herringmean)
-paste("Standard deviation of this:", no_herringSD)
 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring, 
@@ -357,6 +354,9 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
           xlim(0,25)
 
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
+
+paste("Mean value of log(ppmr), weighted by number of observations:", no_herringmean)
+paste("Standard deviation of this:", no_herringSD)
 ```
 
 The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
@@ -410,7 +410,7 @@ Therefore, we can continue with the assumption that there is a difference in the
 
 # Predator mass against ppmr
 
-## Plotting predator mass against ppmr, separated by predator species
+## Plotting ppmr against predator mass, separated by predator species
 
 ```{r pred mass v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
@@ -428,8 +428,7 @@ $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
 
-We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr) (and hence the ppmr is independent of the predator mass for a certain species).
-
+We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator mass for a certain species (as assumed).
 
 ## Gradients of the plots
 
@@ -453,6 +452,63 @@ kable(ppmrvp_grads)
 ```
 
 For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euorpean Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
+
+## Residuals of the lppmr v. lpred mass
+
+```{r residual plot, echo=TRUE, message=FALSE}
+
+species_df2 <- renamed_df %>% filter(pred_species == fixed("Herring"))
+model2 <- lm(lppmr~lpred_weight, data=species_df2) 
+res <- resid(model2)
+
+#lm() fits a regression models for log(ppmr) against log(predator mass)
+#resid() creates a list of the residual of each individual data point
+
+ggplot(species_df2, aes(x = lpred_weight, y = lppmr)) +
+  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
+  geom_segment(aes(xend = lpred_weight, yend = predicted), alpha = .2,  colour = "blue") +
+  geom_point(size=0.5)
+
+# geom_smooth() creates the regression line of the regression model from lm()
+# geom_segment() draws a line from each point to the regressionline 
+
+plot(fitted(model), res) + abline(0,0)
+
+#this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
+
+hist(resid(model), border='red', col="transparent", 
+       main = paste("Histogram of residuals: Herring"))
+#hist(resid()) plots a histogram of the residuals of each lppmr v lpred_weight graph
+```
+
+We can see that for Herring, the residuals do not particularly look like they are normally distributed.
+
+
+```{r applying residual plots, echo=TRUE, message=FALSE}
+i <- 1
+#setting i=1 for the while loop
+
+while(i<=length(species_list)){
+  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
+  model <- lm(lppmr~lpred_weight, data=species_df)  
+  hist(resid(model), border='red', col="transparent", 
+       main = paste("Histogram of residuals:", species_list[i] ))
+  i=i+1
+}
+```
+
+This is a histogram plot of the residuals of the plot, separated for each predator species. We are looking for residuals which are normally distributed around resid=0. 
+
+Of the resulting histograms, the following show (approximately) a normal distribution:
+  * Cod
+  * European Hake
+  * Megrim
+  * Monkfish
+  * Norway Pout
+  * Poor Cod
+  * Whiting
+  
+Therefore, the assumption that the gradient of the lppmr v lpred_weight graph is equal to 0 for each plot (approximately) holds true for the above species.
 
 ## Different weightings
 
@@ -541,11 +597,39 @@ By looking at the two differently weighted graphs, it is clear to see that the p
 
 # Introducing a mixed effects model
 
+## Density of lppmr plots
+
+```{r trial d, echo=TRUE}
+
+#Doing a density plot, essentially to find the mean lppmr for each predator species (which is then used for further modelling etc.)
+#Find mean for each species by treating pred_species as a fixed effect?
+
+d <- lmer(lppmr ~ pred_species + (1|year), data = renamed_df, REML=FALSE)
+d
+hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
+print(VarCorr(d),comp="Variance")
+paste("AIC:", AIC(d))
+
+renamed2 <- renamed_df %>% 
+    mutate(lppmr = fitted(d))
+
+#remove data points where there isn't a fitted(d) value
+
+renamed_df %>% 
+    mutate(lppmr = fitted(d)) %>% 
+      ggplot(aes(x=lppmr)) + 
+      labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
+       x="log(PPMR)", y="Biomass density of prey") +
+      facet_wrap(~renamed_df$pred_species, scale="free_y") + 
+      theme(strip.text = element_text(size = 5)) +
+      geom_density(aes(weight = prey_weight_g), colour="red")
+```
+
 ## Building up the model {.tabset}
 
 ### Basic Linear model
 
-With $\log(\text{prey_weight}) = m \times \log(\text{pred_species}) + c$
+With $\log(\text{ppmr}) = m \times \log(\text{prey mass}) + c$
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
@@ -751,6 +835,7 @@ Note:
 
   * $A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
   * Value of $\beta_{2} = $ should be individual for each pred species??
+
 
 ## Outputs
 
