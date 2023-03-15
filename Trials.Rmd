@@ -456,28 +456,29 @@ For the assumption to be upheld, we need gradient=0. This is (approximately) sat
 ## Residuals of the lppmr v. lpred mass
 
 ```{r residual plot, echo=TRUE, message=FALSE}
-
 species_df2 <- renamed_df %>% filter(pred_species == fixed("Herring"))
-model2 <- lm(lppmr~lpred_weight, data=species_df2) 
+model2 <- lm(lppmr ~ lpred_weight, data=species_df2) 
 res <- resid(model2)
 
 #lm() fits a regression models for log(ppmr) against log(predator mass)
 #resid() creates a list of the residual of each individual data point
 
-ggplot(species_df2, aes(x = lpred_weight, y = lppmr)) +
-  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
-  geom_segment(aes(xend = lpred_weight, yend = predicted), alpha = .2,  colour = "blue") +
-  geom_point(size=0.5)
+#abc <- ggplot(species_df2, aes(x = lpred_weight, y = lppmr)) +
+#  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
+#  geom_segment(aes(xend = lpred_weight, yend = res), alpha = .2,  colour = "blue") +
+#  geom_point(size=0.5)
+
+#plot(fitted(abc),res) + abline(0,0)
 
 # geom_smooth() creates the regression line of the regression model from lm()
 # geom_segment() draws a line from each point to the regressionline 
 
-plot(fitted(model), res) + abline(0,0)
+#plot(fitted(model), res) + abline(0,0)
 
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 
-hist(resid(model), border='red', col="transparent", 
-       main = paste("Histogram of residuals: Herring"))
+#hist(resid(model), border='red', col="transparent", 
+#       main = paste("Histogram of residuals: Herring"))
 #hist(resid()) plots a histogram of the residuals of each lppmr v lpred_weight graph
 ```
 
@@ -597,43 +598,15 @@ By looking at the two differently weighted graphs, it is clear to see that the p
 
 # Introducing a mixed effects model
 
-## Density of lppmr plots
-
-```{r trial d, echo=TRUE}
-
-#Doing a density plot, essentially to find the mean lppmr for each predator species (which is then used for further modelling etc.)
-#Find mean for each species by treating pred_species as a fixed effect?
-
-d <- lmer(lppmr ~ pred_species + (1|year), data = renamed_df, REML=FALSE)
-d
-hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
-print(VarCorr(d),comp="Variance")
-paste("AIC:", AIC(d))
-
-renamed2 <- renamed_df %>% 
-    mutate(lppmr = fitted(d))
-
-#remove data points where there isn't a fitted(d) value
-
-renamed_df %>% 
-    mutate(lppmr = fitted(d)) %>% 
-      ggplot(aes(x=lppmr)) + 
-      labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
-       x="log(PPMR)", y="Biomass density of prey") +
-      facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-      theme(strip.text = element_text(size = 5)) +
-      geom_density(aes(weight = prey_weight_g), colour="red")
-```
-
 ## Building up the model {.tabset}
 
 ### Basic Linear model
 
-With $\log(\text{ppmr}) = m \times \log(\text{prey mass}) + c$
+With $\log(\text{ppmr}) = m \times \log(\text{predator mass}) + c$
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
-    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_line(size=1) + theme_classic()
 ```
 
@@ -650,7 +623,7 @@ null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
 
 renamed_df %>% 
     mutate(lppmr = fitted(null)) %>% 
-    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) +
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) +
     theme_classic() +
     geom_line(size=1) 
 ```
@@ -670,17 +643,17 @@ This model has the following variables:
 
 ### First trial
 
-Fixed effects: lprey_weight
+Fixed effects: lpred_weight
 
 Renamed effects: pred_species
 
 ```{r first, echo=TRUE}
-one <- lmer(lppmr ~ lprey_weight + (1|pred_species), data = renamed_df, REML=FALSE)
+one <- lmer(lppmr ~ lpred_weight + (1|pred_species), data = renamed_df, REML=FALSE)
 #same slope for every effect (but varying intercept)
 
 renamed_df %>% 
     mutate(lppmr= fitted(one)) %>% 
-    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
 ```
@@ -692,12 +665,12 @@ Fixed effects: lprey_weight
 Renamed effects: pred_species (random slope and fixed intercept; varies with respect to (w.r.t.) lprey_weight)
 
 ```{r second, echo=TRUE}
-two <- lmer(lppmr ~ lprey_weight + (0+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+two <- lmer(lppmr ~ lpred_weight + (0+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (independent)
 
 renamed_df %>% 
     mutate(lppmr = fitted(two)) %>% 
-    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
 ```
@@ -709,12 +682,12 @@ Fixed effects: lprey_weight
 Renamed effects: pred_species (random slope and random intercept; varies w.r.t lprey_weight)
 
 ```{r third, echo=TRUE}
-three <- lmer(lppmr ~ lprey_weight + (1+lprey_weight|pred_species), data = renamed_df, REML=FALSE)
+three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (correlated)
 
 renamed_df %>% 
     mutate(lppmr = fitted(three)) %>% 
-    ggplot(aes(x=lprey_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     geom_line(size=1) 
 ```
@@ -736,12 +709,12 @@ Here, all the random effects are modelled with a randomly distributed slope and 
 
 ### Trial a
 
-Fixed effects: lprey_weight
+Fixed effects: lpred_weight
 
 Renamed effects: haul_id_short
 
 ```{r trial a, echo=TRUE}
-a <- lmer(lppmr ~ lprey_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
+a <- lmer(lppmr ~ lpred_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
 a
 hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
 #Creates a histogram of the distribution of the residuals
@@ -753,12 +726,12 @@ paste("AIC:", AIC(a))
 
 ### Trial b
 
-Fixed effects: lprey_weight
+Fixed effects: lpred_weight
 
 Renamed effects: haul_id_short, year
 
 ```{r trial b, echo=TRUE}
-b <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
+b <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
 b
 hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(b),comp="Variance")
@@ -767,12 +740,12 @@ paste("AIC:", AIC(b))
 
 ### Trial c
 
-Fixed effects: lprey_weight
+Fixed effects: lpred_weight
 
 Renamed effects: haul_id_short, year, ices_rectangle
 
 ```{r trial c, echo=TRUE}
-c <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+c <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 c
 hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(c),comp="Variance")
@@ -781,12 +754,12 @@ paste("AIC:", AIC(c))
 
 ### Trial d
 
-Fixed effects: lprey_weight
+Fixed effects: lpred_weight
 
 Renamed effects: haul_id_short, year, ices_rectangle, pred_species
 
 ```{r trial d, echo=TRUE}
-d <- lmer(lppmr ~ lprey_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
+d <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
 d
 hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(d),comp="Variance")
@@ -795,12 +768,12 @@ paste("AIC:", AIC(d))
 
 ### Trial e
 
-Fixed effects: lprey_weight, pred_species
+Fixed effects: lpred_weight, pred_species
 
 Renamed effects: haul_id_short, year, ices_rectangle
 
 ```{r trial e, echo=TRUE}
-e <- lmer(lppmr ~ lprey_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+e <- lmer(lppmr ~ lpred_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
 e
 hist(resid(e), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(e),comp="Variance")
@@ -809,7 +782,7 @@ paste("AIC:", AIC(e))
 
 Mathematical representation
 $$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{prey weight})_{j} + 
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator mass})_{j} + 
                 \beta_{2} (\text{predator species})_{j} + A_{0[j]} + B_{0[j]} + 
                 C_{0[j]} + \epsilon_{ij}
 $$
@@ -858,8 +831,17 @@ But, the error term (standard error) roughly increases as more random effects ar
 #                 prey_weight_g = "x",
 #                 lprey_weight = letters[1:6],
 #                 no._prey_per_stmch = "y")
+
+#renamed_df %>% 
+#    mutate(lppmr = fitted(d)) %>% 
+#      ggplot(aes(x=lppmr)) + 
+#      labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
+#       x="log(PPMR)", y="Biomass density of prey") +
+#      facet_wrap(~renamed_df$pred_species, scale="free_y") + 
+#      theme(strip.text = element_text(size = 5)) +
+#      geom_density(aes(weight = prey_weight_g), colour="red")
           
-#weight_mixed <- lmer(lppmr ~ lprey_weight, data = herringDF, REML=FALSE)
+#weight_mixed <- lmer(lppmr ~ lpred_weight, data = herringDF, REML=FALSE)
 
 #weighting observations by prey_weight_g
 #two <- update(weight_mixed, weights = prey_weight_g)
