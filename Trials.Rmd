@@ -154,11 +154,22 @@ This graph is looking at the distribution of the weight of prey recorded, i.e. l
 
 There are some potentially interesting results, so results from different ships were plotted on individual curves to further look into these results.
 
-```{r sep by ships, echo=TRUE}
-renamed_df$'haul_id_short' <- gsub("\\-.*", "", renamed_df$'haul_id')
-renamed_df$'haul_id_short' <- gsub("_", "", renamed_df$'haul_id_short')
+```{r sep by all ships, echo=TRUE}
+renamed_df$haul_id_short <- gsub("\\-.*", "", renamed_df$haul_id)
+renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
 #the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
 
+ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
+  labs(title = "Number of prey per stomach v. log(prey weight) - separated by all ship names",
+       x="log(prey weight)", y="Number of prey per stomach") + 
+  geom_point(size=0.02, colour="red") +
+  theme(strip.text = element_text(size = 10)) + 
+  facet_wrap(~renamed_df$haul_id_short, scale="free_y")
+```
+
+Taking a closer look at some of these ships gives the plots below:
+
+```{r sep by ships, echo=TRUE}
 interesting_haul <- filter(renamed_df, 
                            haul_id_short=='CLYDE'|haul_id_short=='END04'|haul_id_short=='LUC'|
                              haul_id_short=='HIDDINK'|haul_id_short=='EXCmacDATSTO815'|
@@ -169,7 +180,8 @@ haul_list_interesting <- unique(interesting_haul$haul_id_short)
 #creates an array containing every individual (renamed) ship name that we are interested in
 
 ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "Number of prey per stomach v. log(prey weight) - separated by ship names",
+  labs(title = "Number of prey per stomach v. log(prey weight) 
+       - separated by ship names, for a selection of 6 ships",
        x="log(prey weight)", y="Number of prey per stomach") + 
   geom_point(size=0.02, colour="red") +
   theme(strip.text = element_text(size = 10)) + 
@@ -183,19 +195,35 @@ These six graphs show a range of unusual looking points:
 3. lots of the same no. of prey per stomach observations for HIDDINK.(27180)
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
 
-There are a number of other graphs which also provided potentially erroneous data, and the number of datapoints affected are as below:
+There are a number of other ships which also provided potentially erroneous data, and the number of datapoints affected are as below:
 
 ```{r no of obs, echo=TRUE}
-paste("Number of observations of type 1:", count(filter(renamed_df, haul_id_short=='END04')))
+type1 <- length((filter(renamed_df, haul_id_short=='END04'))$haul_id_short)
+#counting the number of observations recorded for each sort of error or interesting relation
 
-paste("Number of observations of type 2:", count(filter(renamed_df, haul_id_short=='CLION09'|haul_id_short=='LUC'|haul_id_short=='UNITY'|haul_id_short=='CLYDE')))
+type2 <- length((filter(renamed_df, haul_id_short=='CLION09' | haul_id_short=='LUC' | haul_id_short=='UNITY' | haul_id_short=='CLYDE'))$haul_id_short)
 
-paste("Number of observations of type 3:", count(filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUCELLA'|haul_id_short=='BULLEN'|haul_id_short=='CIROL04'|haul_id_short=='CIROL10'|haul_id_short=='CLION03'|haul_id_short=='CLION07'|haul_id_short=='CLION12'|haul_id_short=='COREL02'|haul_id_short=='COREL06'|haul_id_short=='CORY04'|haul_id_short=='CYPRIS'|haul_id_short=='END02'|haul_id_short=='END12'|haul_id_short=='HEINCKE147'|haul_id_short=='HIDDINK'|haul_id_short=='OITHONA'|haul_id_short=='STRANDLINE'|haul_id_short=='TELLINA')))
+type3 <- length((filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUCELLA'|haul_id_short=='BULLEN'|haul_id_short=='CIROL04'|haul_id_short=='CIROL10'|haul_id_short=='CLION03'|haul_id_short=='CLION07'|haul_id_short=='CLION12'|haul_id_short=='COREL02'|haul_id_short=='COREL06'|haul_id_short=='CORY04'|haul_id_short=='CYPRIS'|haul_id_short=='END02'|haul_id_short=='END12'|haul_id_short=='HEINCKE147'|haul_id_short=='HIDDINK'|haul_id_short=='OITHONA'|haul_id_short=='STRANDLINE'|haul_id_short=='TELLINA'))$haul_id_short)
 
-paste("Number of observations of type 4:", count(filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error')))
+type4 <- length((filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error'))$haul_id_short)
+
+ship_erroneous <- data.frame("Type"=c("y proportional to exp(-x)", "Single prey weight"
+                                      , "Same number of prey per stomach", "Same data"),
+                        "Number of observations"=c(type1, type2, type3, type4))
+#creates a data frame which shows the number of observations of each error 'type'
+
+kable(ship_erroneous)
+#creates a table of the ship_erroneous data frame as an output
 ```
 
-Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
+
+In total, 35445 out of the total 267431 observations lie within these potentially erroneous groups. This is:
+$$
+  \frac{35445}{267431} \times 100 = 13.25389 \%
+$$
+
+
+This means that approximately $13%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
 
 # Prey and predator weight relation
 
@@ -229,7 +257,7 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
   labs(title = "log(prey mass) v. log(predator mass) plot", 
        x="log(predator mass)", y="log(prey mass)") + 
   geom_hex(bins = 50) +
-  scale_fill_gradient2(low = "black", mid="orange", high = "red", midpoint=600) +
+  scale_fill_gradient2(low = "black", mid = "orange", high = "red", midpoint = 200) +
   stat_smooth(method='lm', se=FALSE, colour="blue")
 
 # stat_smooth adds a line of best fit plotted through the points
@@ -291,13 +319,15 @@ kable(pvp_grads)
 #kable prints the information in the pvp_grads
 ```
 
-Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality for each specific species.
+Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
 
-We are wanting gradient=1 for proportionality. This is only true (to 1 significant figure) for the species Cod, European Hake, Monkfish and Whiting. Although this is a very limited number of the predator species, the assumption that the predator and prey masses are proportional is a reasonable one, so we will continue wiht this assumption.
+We are wanting gradient=1 for proportionality. This is true ($\pm 0.5$) for the species Cod, Common Dab, European Hake, Haddock, Horse Mackerel, Megrim, Monkfish, Norway Pout, Plaice, Poor Cod, Sprat and Whiting. This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one, and so we will continue with this assumption.
+
+This assumption of proportionality allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
 
 # Specific PPMR calculations by different weightings for Herring species
 
-Here, we take only observations relating to the predator type Herring. This allows us to do more specific analysis about the shifted mean and begin to explain the maths behind this shifting.
+Here, we take only observations relating to the predator type Herring. This allows us to do more specific analysis about how density observations can be weighted, and explain why the weighted means are shifted by some amount.
 
 ```{r Herring PPMR setup, echo=TRUE}
 herringDF <- renamed_df %>% 
@@ -492,10 +522,19 @@ i <- 1
 while(i<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
   model <- lm(lppmr~lpred_weight, data=species_df)  
-  hist(resid(model), border='red', col="transparent", 
-       main = paste("Histogram of residuals:", species_list[i] ))
+  plotted <- ggplot(data = species_df, aes(x=resid(model))) + 
+    labs(title = paste("Distribution of residuals:", species_list[i])) +
+    geom_density(colour="red")
+  plotted
+#As a distribution??
   i=i+1
 }
+#Plot every while loop??
+
+
+#hist(resid(model), border='red', col="transparent", 
+#       main = paste("Histogram of residuals:", species_list[i] ))
+#As a histogram??
 ```
 
 This is a histogram plot of the residuals of the plot, separated for each predator species. We are looking for residuals which are normally distributed around resid=0. 
