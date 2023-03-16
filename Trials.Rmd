@@ -227,10 +227,10 @@ This means that approximately $13%$ of the data set comes from potentially unrel
 
 # Prey and predator weight relation
 
-We are attempting to find a link between the predator mass and the prey mass. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
+We are attempting to find a link between the predator weight and the prey weight. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
 
 $$
- \log (\text{prey mass}) = m \times \text{log(predator mass)} + c ,
+ \log (\text{prey weight}) = m \times \text{log(predator weight)} + c ,
 $$
 
 where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
@@ -238,24 +238,24 @@ where m is the gradient of the slope and c is the y-intercept (thinking of this 
 Taking the exponential of both sides,
 
 $$
-  \text{prey mass} = \exp({{m}\times{\log(\text{predator mass})}}) + \log(D) ,
+  \text{prey weight} = \exp({{m}\times{\log(\text{predator weight})}}) + \log(D) ,
 $$
 where log(D) = c. 
 
 Finally,
 
 $$
-  \text{prey mass} = \text{predator mass}^m \times D
+  \text{prey weight} = \text{predator weight}^m \times D
 $$
 
-Hence, we want m=1 to show that log(predator mass) is proportional to log(prey weight) (as expected).
+Hence, we want m=1 to show that log(predator weight) is proportional to log(prey weight) (as expected).
 
 ```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
-  labs(title = "log(prey mass) v. log(predator mass) plot", 
-       x="log(predator mass)", y="log(prey mass)") + 
+  labs(title = "log(prey weight) v. log(predator weight) plot", 
+       x="log(predator weight)", y="log(prey weight)") + 
   geom_hex(bins = 50) +
   scale_fill_gradient2(low = "black", mid = "orange", high = "red", midpoint = 200) +
   stat_smooth(method='lm', se=FALSE, colour="blue")
@@ -269,7 +269,7 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
 #scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
 
 slope <- coef(lm(renamed_df$lprey_weight~renamed_df$lpred_weight))
-paste("slope of the log(prey mass) v. log(predator mass) line of best fit:", slope[2])
+paste("slope of the log(prey weight) v. log(predator weight) line of best fit:", slope[2])
 
 # coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
@@ -279,12 +279,12 @@ For this graph, the slope is not equal to one. However, this graph is plotted ov
 
 Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey weight for each specific species.
 
-## Prey v. predator mass plot, separated by predator species
+## Prey v. predator weight plot, separated by predator species
 
 ```{r sep by pred species, echo=TRUE, message=FALSE}
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
-  labs(title = "log(prey mass) v. log(predator mass), separated by predator species", 
-       x="log(predator mass)", y="log(prey mass)") +
+  labs(title = "log(prey weight) v. log(predator weight), separated by predator species", 
+       x="log(predator weight)", y="log(prey weight)") +
   geom_point(size=0.2) + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
@@ -321,9 +321,62 @@ kable(pvp_grads)
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
 
-We are wanting gradient=1 for proportionality. This is true ($\pm 0.5$) for the species Cod, Common Dab, European Hake, Haddock, Horse Mackerel, Megrim, Monkfish, Norway Pout, Plaice, Poor Cod, Sprat and Whiting. This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one, and so we will continue with this assumption.
+We are wanting gradient=1 for proportionality. This is true ($\pm 0.5$) for the species:
+
+ * Cod
+ * Common Dab
+ * European Hake
+ * Haddock
+ * Horse Mackerel
+ * Megrim
+ * Monkfish
+ * Norway Pout
+ * Plaice
+ * Poor Cod
+ * Sprat
+ * Whiting
+ 
+This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one, and so we will continue with this assumption.
 
 This assumption of proportionality allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
+
+#  PPMR for individual species
+
+Here, we are looking for the most common log(PPMR) for each individual species. This will be done by plotting log(PPMR) against the density of points, and weighting observations on different variables. By assuming these are normally distributed relations, there should be a 'peak' point of log(ppmr) which is where the mean/most common log(ppmr) value lies. We assume this will be different for different species of predator, i.e. each predator has a preferred ppmr value and hence each predator type has a preferred relative size of prey.
+
+##  Weighted by prey biomass
+
+These plots are weighted by the prey biomass. This means that we are looking at the distribution of prey biomass across values of log(PPMR), so points with a larger biomass are  prioritised/weighted more than those with a smaller biomass.
+
+```{r ave PPMR biomass, echo=TRUE}
+ggplot(data = renamed_df, aes(x=lppmr)) + 
+  labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
+       x="log(PPMR)", y="Biomass density of prey") +
+  facet_wrap(~renamed_df$pred_species, scale="free_y") + 
+  theme(strip.text = element_text(size = 5)) +
+  geom_density(aes(weight = prey_weight_g), colour="red")
+
+#using facet_wrap for the variable (pred_species) means the data is separated into individual plots for each predator species
+#geom_density means area under the curve = 1 (i.e. the graph is normalised)
+#weight=prey_weight_g means the points are 'weighted' by the column weight (biomass) of each individual prey
+``` 
+
+## Weighted by number of prey
+
+These plots are weighted by the number pf prey per stomach. This means that data points with a larger number of prey per stomach are prioritised/weighted more than those with a smaller number of prey per stomach.
+
+```{r ave PPMR prey no., echo=TRUE}
+ggplot(data = renamed_df, aes(x=lppmr)) + 
+  labs(title = "Density plot of log(PPMR), weighted by number density of prey", 
+       x="log(PPMR)", y="Number density of prey") +
+  facet_wrap(~renamed_df$pred_species, scale="free_y") + 
+  theme(strip.text = element_text(size = 5)) +
+  geom_density(aes(weight = no._prey_per_stmch), colour="green")
+
+#weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per stomach
+```
+
+By looking at the two differently weighted graphs, it is clear to see that the plots are 'shifted' by some amount (e.g. the Blue Whiting when weighted by prey biomass has a mean log(ppmr) of roughly 4.8, and when weighted by number of prey this mean becomes roughly 7.5).
 
 # Specific PPMR calculations by different weightings for Herring species
 
@@ -336,6 +389,8 @@ herringDF <- renamed_df %>%
 ```
 
 ## Weighted by prey biomass
+
+The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
 
 ```{r Prey biomass weighting, echo=TRUE} 
 bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
@@ -364,9 +419,9 @@ paste("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
 paste("Standard deviation of this:", bio_herringSD)
 ```
 
-The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
-
 ## Weighted by number of prey
+
+The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
 
 ```{r No of prey weighting, echo=TRUE} 
 no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
@@ -375,8 +430,8 @@ no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, n
 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring, 
-               weighted by no. of prey",
-               x="log(PPMR)", y="No. density of observations") +
+               weighted by number of prey per stomach",
+               x="log(PPMR)", y="Number density of observations") +
           geom_density(aes(weight = no._prey_per_stmch), colour="green") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
           stat_function(fun = dnorm, 
@@ -385,15 +440,16 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
 
-paste("Mean value of log(ppmr), weighted by number of observations:", no_herringmean)
+paste("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean)
 paste("Standard deviation of this:", no_herringSD)
 ```
-
-The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
 
 ## Combined graph
 
 ```{r Herring combined graph, echo=TRUE} 
+dev.new(width=10, height=5, unit="in")
+#resizes the plot to make it fit in the output html file in a neater way
+
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring,
                with various weightings",
@@ -414,13 +470,15 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 This is a graph with both the the distribution of Herring log(PPMR) as weighted by prey biomass and number of prey plotted over each other (along with appropriately weighted normal distribution curves plotted over the top of each).
 
-Prey biomass weighted mean: 6.629177
-No. of prey weighted mean: 13.54102
+* Prey biomass weighted mean: 6.629177
+* Number of prey weighted mean: 13.54102
 
-Prey biomass standard deviation: 2.3508789268221
-No. of prey standard deviation: 2.63330496940788
+and
 
-The mean is shifted by 6.911843.
+* Prey biomass standard deviation: 2.3508789268221
+* Number of prey standard deviation: 2.63330496940788
+
+The mean is shifted by 6.911843 ($= 13.54102 - 6.629177$).
 
 The mathematics of shifted means for this difference in weighting is:
 
@@ -438,27 +496,27 @@ There is a difference in expected and actual prey biomass weighted mean of 0.305
 
 Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
-# Predator mass against ppmr
+# Predator weight against ppmr
 
-## Plotting ppmr against predator mass, separated by predator species
+## Plotting ppmr against predator weight, separated by predator species
 
-```{r pred mass v. ppmr, echo=TRUE, message=FALSE}
+```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001) +
-  labs(title = "log(PPMR) v. log(predator mass) plot", x="log(Pred mass)", y="log(PPMR)") + 
+  labs(title = "log(PPMR) v. log(predator weight) plot", x="log(Predator weight)", y="log(PPMR)") + 
   stat_smooth (method='lm', se=FALSE) + 
   facet_wrap(~pred_species, scale="free_y")
 ```
 
-Graphing $\log$(pred mass) v. $\log$(PPMR) for individual predator species to see if the predator mass related to the ppmr. 
+Graphing $\log$(predator weight) v. $\log$(PPMR) for individual predator species to see if the predator weight related to the ppmr. 
 
 $$
-    \log(\text{PPMR}) = m \times \log (\text{pred mass}) + c
+    \log(\text{PPMR}) = m \times \log (\text{predator weight}) + c
 $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
 
-We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator mass for a certain species (as assumed).
+We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator weight) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator weight for a certain species (as assumed).
 
 ## Gradients of the plots
 
@@ -481,76 +539,25 @@ ppmrvp_grads <- data.frame(pred_species=c(species_list),
 kable(ppmrvp_grads)
 ```
 
-For the assumption to be upheld, we need gradient=0. This is (approximately) satisfied for the species Cod, Common Dab, Euorpean Hake, Haddock, Megrim, Monkfish, Norway Pout and Poor Cod. Although none of these are exactly equal to 0, they are sufficiently close to continue with the assumption that the ppmr is independent of the predator mass for the named predator species.
+For the assumption to be upheld, we need gradient=0. This is (approximately, by $\pm 0.5$) satisfied for the species:
 
-## Residuals of the lppmr v. lpred mass
-
-```{r residual plot, echo=TRUE, message=FALSE}
-species_df2 <- renamed_df %>% filter(pred_species == fixed("Herring"))
-model2 <- lm(lppmr ~ lpred_weight, data=species_df2) 
-res <- resid(model2)
-
-#lm() fits a regression models for log(ppmr) against log(predator mass)
-#resid() creates a list of the residual of each individual data point
-
-#abc <- ggplot(species_df2, aes(x = lpred_weight, y = lppmr)) +
-#  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
-#  geom_segment(aes(xend = lpred_weight, yend = res), alpha = .2,  colour = "blue") +
-#  geom_point(size=0.5)
-
-#plot(fitted(abc),res) + abline(0,0)
-
-# geom_smooth() creates the regression line of the regression model from lm()
-# geom_segment() draws a line from each point to the regressionline 
-
-#plot(fitted(model), res) + abline(0,0)
-
-#this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
-
-#hist(resid(model), border='red', col="transparent", 
-#       main = paste("Histogram of residuals: Herring"))
-#hist(resid()) plots a histogram of the residuals of each lppmr v lpred_weight graph
-```
-
-We can see that for Herring, the residuals do not particularly look like they are normally distributed.
+ * Cod
+ * Common Dab
+ * European Hake
+ * Haddock
+ * Horse Mackerel
+ * Megrim 
+ * Monkfish
+ * Norway Pout
+ * Plaice
+ * Poor Cod
+ * Sprat
+ * Whiting
+ 
+This means that the gradients of 12 out of the possible 16 species $= 0 \pm 0.5$. However, this amount of error is fairly large, so we have not yet proved that the assumption of independence can be upheld for this data set.
 
 
-```{r applying residual plots, echo=TRUE, message=FALSE}
-i <- 1
-#setting i=1 for the while loop
-
-while(i<=length(species_list)){
-  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
-  model <- lm(lppmr~lpred_weight, data=species_df)  
-  plotted <- ggplot(data = species_df, aes(x=resid(model))) + 
-    labs(title = paste("Distribution of residuals:", species_list[i])) +
-    geom_density(colour="red")
-  plotted
-#As a distribution??
-  i=i+1
-}
-#Plot every while loop??
-
-
-#hist(resid(model), border='red', col="transparent", 
-#       main = paste("Histogram of residuals:", species_list[i] ))
-#As a histogram??
-```
-
-This is a histogram plot of the residuals of the plot, separated for each predator species. We are looking for residuals which are normally distributed around resid=0. 
-
-Of the resulting histograms, the following show (approximately) a normal distribution:
-  * Cod
-  * European Hake
-  * Megrim
-  * Monkfish
-  * Norway Pout
-  * Poor Cod
-  * Whiting
-  
-Therefore, the assumption that the gradient of the lppmr v lpred_weight graph is equal to 0 for each plot (approximately) holds true for the above species.
-
-## Different weightings
+## Different weightings of the line of best fit
 
 ```{r poor cod, echo=TRUE, message=FALSE}
 species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
@@ -558,8 +565,8 @@ species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 
 ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
-  labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
-       x="log(Pred mass)", y="log(PPMR)") + 
+  labs(title = "log(PPMR) v. log(predator weight) plot: Poor Cod", 
+       x="log(Pred weight)", y="log(PPMR)") + 
   facet_wrap(~pred_species, scale="free_y") + 
   stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), 
               method='lm', se=FALSE) +
@@ -590,7 +597,6 @@ biomass_weighting <-
 paste("iii) Weighted by prey biomass:", biomass_weighting[2])
 ```
 
-
 Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
 
 1. blue: by number of prey per stomach
@@ -599,41 +605,63 @@ Looking at just the predator species 'poor cod'. There are three LOBF (line of b
 
 When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope=0) is true when looking at a prey biomass weighting.
 
-# Average PPMR for individual species
+## Residuals of the lppmr v. lpred weight
 
-Here, we are looking for the most common log(PPMR) for each individual species. This will be done by plotting log(PPMR) against the density of points, and weighting observations on different variables. By assuming these are normally distributed relations, there should be a 'peak' point of log(ppmr) which is where the mean/most common log(ppmr) value lies. We assume this will be different for different species of predator, i.e. each predator has a preferred ppmr value and hence each predator type has a preferred relative size of prey.
+As an alternative proof, we can look at the residuals of these plots to see if the residuals are normally distributed. If the residuals of some plot are normally distributed, it means that the assumed linear model is valid, i.e. if the residuals are normally distributed then the assumption that the PPMR and predator species are independent can be upheld.
 
-##  Weighted by prey biomass
-```{r ave PPMR biomass, echo=TRUE}
-ggplot(data = renamed_df, aes(x=lppmr)) + 
-  labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
-       x="log(PPMR)", y="Biomass density of prey") +
-  facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = prey_weight_g), colour="red")
+```{r residual plot, echo=TRUE, message=FALSE}
+herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
+herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
+#lm() fits a regression models for log(ppmr) against log(predator weight)
 
-#using facet_wrap for the variable (pred_species) means the data is separated into individual plots for each predator species
-#geom_density means area under the curve = 1 (i.e. the graph is normalised)
-#weight=prey_weight_g means the points are 'weighted' by the column weight (biomass) of each individual prey
-``` 
+ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
+  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
+  geom_segment(aes(xend = lpred_weight, yend = res), alpha = .2,  colour = "red") +
+  geom_point(size=0.5)
+#showing the residuals of each point to the line of best fit
+# geom_smooth() creates the regression line of the regression model from lm()
+# geom_segment() draws a line from each point to the regressionline 
 
-These plots are weighted by the prey biomass. This means that we are looking at the distribution of prey biomass across values of log(PPMR), so points with a larger biomass are prioritised/weighted more than those with a smaller biomass.
+ggplot(herring_model, aes(x = .fitted, y = .resid)) +
+  geom_point(colour="red", size=0.5) +
+  geom_hline(yintercept = 0) +
+  labs(title='Plot of the residuals against the fitted values', x='Fitted Values', y='Residuals')
+#this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
+#.resid creates a list of the residuals of each individual data point
 
-## Weighted by number of prey
-```{r ave PPMR prey no., echo=TRUE}
-ggplot(data = renamed_df, aes(x=lppmr)) + 
-  labs(title = "Density plot of log(PPMR), weighted by number density of prey", 
-       x="log(PPMR)", y="Number density of prey") +
-  facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = no._prey_per_stmch), colour="green")
+ggplot(herring_model, aes(x = .resid)) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density')
 
-#weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per stomach
+#plots the density of the residuals of the lppmr v lpred_weight graph for Herring
 ```
 
-These plots are weighted by the number pf prey per stomach. This means that data points with a larger number of prey per stomach are prioritised/weighted more than those with a smaller number of prey per stomach.
 
-By looking at the two differently weighted graphs, it is clear to see that the plots are 'shifted' by some amount (e.g. the Blue Whiting when weighted by prey biomass has a mean log(ppmr) of roughly 4.8, and when weighted by number of prey this mean becomes roughly 7.5).
+We can see that for the predator species Herring, the residuals do not particularly look like they are normally distributed.
+
+```{r applying residual plots, echo=TRUE, message=FALSE}
+model<- lm(lppmr~lpred_weight, data=renamed_df) 
+
+ggplot(model, aes(x = .resid)) + 
+  geom_density(colour="red") + 
+  facet_wrap(~renamed_df$pred_species, scales = "free_y") +
+  labs(title="Density plot of the residuals", x='Residuals', y='Density')
+#Plotting the density of the residuals for each predator species
+```
+
+This is a histogram plot of the residuals of the plot, separated for each predator species. We are looking for residuals which are normally distributed around resid=0. 
+
+Of the resulting histograms, the following show (approximately) a normal distribution:
+
+  * Cod
+  * Common Dab
+  * Horse Mackerel
+  * Norway Pout
+  * Poor Cod
+  * Sole
+  * Whiting
+
+Therefore, it could be said that the assumption of a linear relation between the $\log(PPMR)$ and predator weight holds for these 7 species. However, none of the proposed normal distributions are that strongly reliable, hence it is a more likely assumption to choose that there is in fact some dependence between the $\log(PPMR)$ and predator weight.
 
 # Introducing a mixed effects model
 
@@ -641,7 +669,7 @@ By looking at the two differently weighted graphs, it is clear to see that the p
 
 ### Basic Linear model
 
-With $\log(\text{ppmr}) = m \times \log(\text{predator mass}) + c$
+With $\log(\text{ppmr}) = m \times \log(\text{predator weight}) + c$
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
@@ -678,7 +706,6 @@ This model has the following variables:
   * $\beta_{0}$ is the intercept term (grand mean)
   * $S_{0[j]}$ is the effect of the random term (pred_species)
   * $\epsilon_{ij}$ is the error term.
-
 
 ### First trial
 
@@ -821,7 +848,7 @@ paste("AIC:", AIC(e))
 
 Mathematical representation
 $$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator mass})_{j} + 
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} + 
                 \beta_{2} (\text{predator species})_{j} + A_{0[j]} + B_{0[j]} + 
                 C_{0[j]} + \epsilon_{ij}
 $$
@@ -832,16 +859,16 @@ Variable name |  Meaning            | Value       |  Where to find
 ------------- | -----------         | -------     | -------------
 $i$           | the group           | -           | -
 $j$           | the item            | -           | -
-$\beta_{0}$   | the intercept term  |  3.304181   | fixed effects -> intercept -> estimate
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{prey weight})$ | -0.758358   | fixed effects -> lprey_weight -> estimat
+$\beta_{0}$   | the intercept term  |  4.6499  | fixed effects -> intercept -> estimate
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{pred weight})$ | 0.2307  | fixed effects -> lpred_weight -> estimate
 $\beta_{2}$   | the fixed effect for $\text{predator species}$| (?)  | -
 $A_{0[j]}$    | the random intercept for item $j$ (dependent on the haul_id_short term) | - | -
-$\omega_{A[00]}$ |  s.d. for A, haul_id_short | 1.6472 |random effects -> groups -> ices_rectangle -> std. dev.
+$\omega_{A[00]}$ |  s.d. for A, haul_id_short | 2.56161 |random effects -> groups -> ices_rectangle -> std. dev.
 $B_{0[j]}$    | random intercept for dep. on the year term | -           | -
-$\omega_{B[00]}$ | [s.d. for B, year] |  1.4235   | -
-$\omega_{C[00]}$ | [s.d. for C, ices_rectangle] | 0.4331    | -
+$\omega_{B[00]}$ | [s.d. for B, year] |  0.31411  | -
+$\omega_{C[00]}$ | [s.d. for C, ices_rectangle] | 0.45300   | -
 $C_{0[j]}$    | dep. on the ices_rectangle term | -             | -
-$\epsilon_{ij}$ | the residual/error term for each individual item | 1.0729 | random effects -> groups -> residual -> std. dev.
+$\epsilon_{ij}$ | the residual/error term for each individual item | 0.45300 | random effects -> groups -> residual -> std. dev.
  
 Note: 
 
@@ -866,31 +893,17 @@ But, the error term (standard error) roughly increases as more random effects ar
 ```{r weighted mixed effects models, echo=TRUE}
 #Do we need weighting? Bc it's not a density plot
 
-#trial_df <- data.frame(lppmr = 10:5,                
-#                 prey_weight_g = "x",
-#                 lprey_weight = letters[1:6],
-#                 no._prey_per_stmch = "y")
-
-#renamed_df %>% 
-#    mutate(lppmr = fitted(d)) %>% 
-#      ggplot(aes(x=lppmr)) + 
-#      labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
-#       x="log(PPMR)", y="Biomass density of prey") +
-#      facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-#      theme(strip.text = element_text(size = 5)) +
-#      geom_density(aes(weight = prey_weight_g), colour="red")
-          
-#weight_mixed <- lmer(lppmr ~ lpred_weight, data = herringDF, REML=FALSE)
+weight_mixed <- lmer(lppmr ~ lpred_weight, data = herringDF, REML=FALSE)
 
 #weighting observations by prey_weight_g
-#two <- update(weight_mixed, weights = prey_weight_g)
-#summary(two)
+two <- update(weight_mixed, weights = prey_weight_g)
+summary(two)
 
 #weighting observations by no._prey_per_stmch
-#three <- update(weight_mixed, weights = no._prey_per_stmch)
-#summary(three)
+three <- update(weight_mixed, weights = no._prey_per_stmch)
+summary(three)
 
-#anova(two,three)
+anova(two,three)
 ```
 
 # Citations
