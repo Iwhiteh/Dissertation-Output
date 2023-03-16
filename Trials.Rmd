@@ -612,7 +612,9 @@ As an alternative proof, we can look at the residuals of these plots to see if t
 ```{r residual plot, echo=TRUE, message=FALSE}
 herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
 herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
+res <- resid(herring_model)
 #lm() fits a regression models for log(ppmr) against log(predator weight)
+#resid() creates a list of the residual of each individual data point
 
 ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
   geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
@@ -893,7 +895,7 @@ But, the error term (standard error) roughly increases as more random effects ar
 ```{r weighted mixed effects models, echo=TRUE}
 #Do we need weighting? Bc it's not a density plot
 
-weight_mixed <- lmer(lppmr ~ lpred_weight, data = herringDF, REML=FALSE)
+weight_mixed <- lmer(lppmr ~ lpred_weight + (1|year), data = herringDF, REML=FALSE)
 
 #weighting observations by prey_weight_g
 two <- update(weight_mixed, weights = prey_weight_g)
