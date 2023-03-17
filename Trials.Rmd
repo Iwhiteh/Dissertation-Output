@@ -663,7 +663,7 @@ Of the resulting histograms, the following show (approximately) a normal distrib
   * Sole
   * Whiting
 
-Therefore, it could be said that the assumption of a linear relation between the $\log(PPMR)$ and predator weight holds for these 7 species. However, none of the proposed normal distributions are that strongly reliable, hence it is a more likely assumption to choose that there is in fact some dependence between the $\log(PPMR)$ and predator weight.
+Therefore, it could be said that the assumption of a linear relation between the $\log(\text{PPMR})$ and predator weight holds for these 7 species. However, none of the proposed normal distributions are that strongly reliable, hence it is a more likely assumption to choose that there is in fact some dependence between the $\log(\text{PPMR})$ and predator weight.
 
 # Introducing a mixed effects model
 
@@ -671,83 +671,94 @@ Therefore, it could be said that the assumption of a linear relation between the
 
 ### Basic Linear model
 
-With $\log(\text{ppmr}) = m \times \log(\text{predator weight}) + c$
+Mathematically represented by:
+$$
+  \log(\text{ppmr}) = m \times \log(\text{predator weight}) + c
+$$
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    geom_line(size=1) + theme_classic()
+    geom_line(size=1) + 
+    labs( x='log(predator weight)', y='log(ppmr)') +
+    theme_classic()
+#theme_classic() removes the grey background of the plot to make it easier to read
 ```
 
-### Null
-
-Fixed effects: no fixed effects
-
-Renamed effects: pred_species
-
-```{r null model, echo=TRUE}
-null <- lmer(lppmr ~ (1|pred_species), data = renamed_df, REML=FALSE)
-#the 'null' model has no predictors (i.e. no linear effects)
-#REML=FALSE means the model is made using 'maximum likelihood' (rather than Restricted Maximum Likelihood), which allows us to compare different models
-
-renamed_df %>% 
-    mutate(lppmr = fitted(null)) %>% 
-    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) +
-    theme_classic() +
-    geom_line(size=1) 
-```
-
-Mathematical representation:
-$$
-    \log(\text{ppmr})_{ij} = \beta_{0} + S_{0[j]} + \epsilon_{ij}
-$$
-
-This model has the following variables:
-  * $i$ is the group
-  * $j$ is the item
-  * $\beta_{0}$ is the intercept term (grand mean)
-  * $S_{0[j]}$ is the effect of the random term (pred_species)
-  * $\epsilon_{ij}$ is the error term.
+This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator weight})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, we will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
 
 ### First trial
 
-Fixed effects: lpred_weight
+Fixed effects: log(predator weight)
 
-Renamed effects: pred_species
+Random effects: predator species (fixed slopes and random intercepts)
 
 ```{r first, echo=TRUE}
 one <- lmer(lppmr ~ lpred_weight + (1|pred_species), data = renamed_df, REML=FALSE)
-#same slope for every effect (but varying intercept)
+#same slope for every predator species, but varying intercept
 
 renamed_df %>% 
     mutate(lppmr= fitted(one)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
+    labs( x='log(predator weight)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
+Here, there is the same slope for every predator species, but each species has a different intercept.
+
+This is mathematically represented by:
+$$
+  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_1 \times \log(\text{predator weight})_i 
+        + \epsilon_{ij}
+$$
+
+Where:
+
+* $i$ is the individual observation
+* $j$ is the group (the predator species)
+* $\alpha_1$ is the slope - this is the same for all predator species
+* $\beta_{0j[i]}$ is the intercept term - this is different for each predator species
+* $\epsilon_{ij}$ is the error term
+
+Note, the intercept is defined at $\log(\text{predator weight}) = 0$.
+
 ### Second trial
 
-Fixed effects: lprey_weight
+Fixed effects: log(predator weight)
 
-Renamed effects: pred_species (random slope and fixed intercept; varies with respect to (w.r.t.) lprey_weight)
+Random effects: predator species (random slope and fixed intercept)
 
 ```{r second, echo=TRUE}
-two <- lmer(lppmr ~ lpred_weight + (0+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
-#Random intercept and random slope (independent)
+two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|pred_species), data = renamed_df, REML=FALSE)
+#(0+ | ) means that the slope of the graph is different for each predator species
 
 renamed_df %>% 
     mutate(lppmr = fitted(two)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
+    labs( x='log(predator weight)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
+This is mathematically represented by:
+$$
+  \log(\text{ppmr})_i = \beta_{0} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
+        + \epsilon_{ij}
+$$
+
+Where:
+
+* $\alpha_{1j[i]}$ is the slope - this is different for each predator species
+* $\beta_{0}$ is the intercept term - this is the same for every predator species
+
+For this plot, the value of log(predator weight) is modeled to be dependent on the predator species.
+
 ### Third trial
 
-Fixed effects: lprey_weight
+Fixed effects: log(predator weight)
 
-Renamed effects: pred_species (random slope and random intercept; varies w.r.t lprey_weight)
+Random effects: predator species (random slope and random intercept)
 
 ```{r third, echo=TRUE}
 three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
@@ -757,23 +768,33 @@ renamed_df %>%
     mutate(lppmr = fitted(three)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
+    labs( x='log(predator weight)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
+
+This is mathematically represented by:
+$$
+  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
+        + \epsilon_{ij}
+$$
+
+Where:
+
+* $\alpha_{1j[i]}$ is the slope - this is different for every predator species
+* $\beta_{0j[i]}$ is the intercept term - this is different for every predator species
+
+For this plot, the value of log(predator weight) is modeled to be dependent on the predator species.
 
 ### Comparing the models
 
 ```{r forming models, echo=TRUE}
-anova(null,one,two,three)
-#comparing the four models
-
-#(1+lprey_weight|pred_species)
-#(1+pred_species|haul_id_short) --> doesn't compile?
-#couldn't introduce (1+pred_species|haul_id_short) or (1+lprey_weight|haul_id_short)
+anova(one,two,three)
+#comparing the three models
 ```
 
 ## Trialing different models {.tabset}
 
-Here, all the random effects are modelled with a randomly distributed slope and intercept.
+Here, all the random effects are modeled with a randomly distributed slope and intercept.
 
 ### Trial a
 
@@ -782,15 +803,25 @@ Fixed effects: lpred_weight
 Renamed effects: haul_id_short
 
 ```{r trial a, echo=TRUE}
-a <- lmer(lppmr ~ lpred_weight + (1|haul_id_short), data = renamed_df, REML=FALSE)
-a
+a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = renamed_df, REML=FALSE)
+
+summary(a)
+
 hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
 #Creates a histogram of the distribution of the residuals
-print(VarCorr(a),comp="Variance")
-#Only prints the variance estimates for the random effects
-paste("AIC:", AIC(a))
-#Prints the AIC value for this model
 ```
+
+This is mathematically represented by:
+$$
+  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
+        + \epsilon_{ij}
+$$
+
+Where:
+
+* $\alpha_{1j[i]}$ is the slope - this is different for every predator species
+* $\beta_{0j[i]}$ is the intercept term - this is different for every predator species
+
 
 ### Trial b
 
@@ -799,7 +830,7 @@ Fixed effects: lpred_weight
 Renamed effects: haul_id_short, year
 
 ```{r trial b, echo=TRUE}
-b <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year), data = renamed_df, REML=FALSE)
+b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
 b
 hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(b),comp="Variance")
@@ -813,7 +844,7 @@ Fixed effects: lpred_weight
 Renamed effects: haul_id_short, year, ices_rectangle
 
 ```{r trial c, echo=TRUE}
-c <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
+c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
 c
 hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(c),comp="Variance")
@@ -827,25 +858,11 @@ Fixed effects: lpred_weight
 Renamed effects: haul_id_short, year, ices_rectangle, pred_species
 
 ```{r trial d, echo=TRUE}
-d <- lmer(lppmr ~ lpred_weight + (1|haul_id_short) + (1|year) + (1|ices_rectangle) + (1|pred_species), data = renamed_df, REML=FALSE)
+d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
 d
 hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(d),comp="Variance")
 paste("AIC:", AIC(d))
-```
-
-### Trial e
-
-Fixed effects: lpred_weight, pred_species
-
-Renamed effects: haul_id_short, year, ices_rectangle
-
-```{r trial e, echo=TRUE}
-e <- lmer(lppmr ~ lpred_weight + pred_species + (1|haul_id_short) + (1|year) + (1|ices_rectangle), data = renamed_df, REML=FALSE)
-e
-hist(resid(e), border='red', col="transparent", main = paste("Histogram of residuals" ))
-print(VarCorr(e),comp="Variance")
-paste("AIC:", AIC(e))
 ```
 
 Mathematical representation
@@ -877,7 +894,6 @@ Note:
   * $A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
   * Value of $\beta_{2} = $ should be individual for each pred species??
 
-
 ## Outputs
 
 Outputs:
@@ -897,6 +913,8 @@ But, the error term (standard error) roughly increases as more random effects ar
 
 weight_mixed <- lmer(lppmr ~ lpred_weight + (1|year), data = herringDF, REML=FALSE)
 
+summary(weight_mixed)
+
 #weighting observations by prey_weight_g
 two <- update(weight_mixed, weights = prey_weight_g)
 summary(two)
@@ -905,7 +923,6 @@ summary(two)
 three <- update(weight_mixed, weights = no._prey_per_stmch)
 summary(three)
 
-anova(two,three)
 ```
 
 # Citations
