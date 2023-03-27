@@ -566,7 +566,7 @@ For the assumption to be upheld, we need gradient $= 0$. This is (approximately,
  * Sprat
  * Whiting
  
-This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not yet supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator weight})$ can be upheld for this data set.
+This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator weight})$ can be upheld for this data set.
 
 ## Different weightings of the line of best fit
 
@@ -585,7 +585,6 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
   stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
   stat_summary(fun.data=mean_se, geom="linerange") +
   scale_colour_manual(name="Weightings", values=c('green', 'red', 'blue')) +
-  scale_linetype_manual(values = c(rep("solid", 2), rep("dashed", 2), "twodash"))
   theme_classic()
 
 # se=FALSE doesn't add an area of error around the LOBF 
@@ -619,43 +618,84 @@ Looking at just the predator species 'poor cod'. There are three LOBF (line of b
 2. red and dashed: by prey biomass
 3. blue: no weighting in the LOBF
 
-When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope=0) is true when looking at a prey biomass weighting.
+When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope$ = 0$) is supported by the data when looking at a prey biomass weighting.
 
-## Residuals of the lppmr v. lpred weight
+However, given that this slope is only equal to $0$ for one of these three weightings, the above linear models in fact show that the $\log(\text{predator weight})$ and the $\log(\text{PPMR})$ are independent of one another.
 
-As an alternative proof, we can look at the residuals of these plots to see if the residuals are normally distributed. If the residuals of some plot are normally distributed, it means that the assumed linear model is valid, i.e. if the residuals are normally distributed then the assumption that the PPMR and predator species are independent can be upheld.
+## Residuals of the log(predator weight) against log(ppmr) plot {.tabset}
 
-```{r residual plot, echo=TRUE, message=FALSE}
+We are now proceeding with the idea that the $\log(\text{predator weight})$ and $\log(\text{PPMR})$ are independent of one another, hence the predator weight is independent of the PPMR. 
+
+Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
+
+```{r Herring info, echo=TRUE, message=FALSE}
 herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
 herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
 res <- resid(herring_model)
+predicted <- predict(herring_model)
 #lm() fits a regression models for log(ppmr) against log(predator weight)
 #resid() creates a list of the residual of each individual data point
+#predict() gives the predicted values
+```
 
+### With residuals of each point to the line of best fit
+
+```{r residual to points, echo=TRUE, message=FALSE}
 ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
-  geom_smooth(method = "lm", se = FALSE, color = "lightgrey") +     
-  geom_segment(aes(xend = lpred_weight, yend = res), alpha = .2,  colour = "red") +
-  geom_point(size=0.5)
+  geom_smooth(method = "lm", se = FALSE, colour="black") +  
+  geom_segment(aes(xend = lpred_weight, yend = predicted), colour="red", size=0.1) +
+  geom_point(size=0.5) +
+  labs(title='The log(predator weight) against log(ppmr) graph, 
+       with lines from the individual points to the line of best fit: Herring', 
+       x='log(predator weight)', y='log(ppmr)')
 #showing the residuals of each point to the line of best fit
-# geom_smooth() creates the regression line of the regression model from lm()
-# geom_segment() draws a line from each point to the regressionline 
+#geom_smooth() creates the regression line of the regression model from lm()
+#geom_segment() draws a line from each point to the regressionline 
+```
 
+### Residuals v. fitted values
+
+```{r residuals v. fitted values, echo=TRUE, message=FALSE}
 ggplot(herring_model, aes(x = .fitted, y = .resid)) +
   geom_point(colour="red", size=0.5) +
-  geom_hline(yintercept = 0) +
-  labs(title='Plot of the residuals against the fitted values', x='Fitted Values', y='Residuals')
+  geom_hline(yintercept = 0, colour="grey") +
+  labs(title='Plot of the residuals against the fitted values: Herring',
+       x='Fitted Values', y='Residuals') +
+  theme_classic()
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 #.resid creates a list of the residuals of each individual data point
+```
 
+### qqplot
+
+```{r qqplot, echo=TRUE, message=FALSE}
+qqnorm(res)
+qqline(res)
+#plot a Q-Q plot to determine if the residuals follow a normal distribution
+#for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
+```
+
+### Density of residuals
+
+```{r density of residuals, echo=TRUE, message=FALSE}
 ggplot(herring_model, aes(x = .resid)) +
   geom_density(colour="red") +
   labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density')
-
 #plots the density of the residuals of the lppmr v lpred_weight graph for Herring
 ```
 
+We can see that for the predator species Herring, the residuals do not look like they are normally distributed.
 
-We can see that for the predator species Herring, the residuals do not particularly look like they are normally distributed.
+### Residuals v. log(predator weight)
+
+```{r residuals v. lpred_weight, echo=TRUE, message=FALSE}
+ggplot(herring_model, aes(x = lpred_weight, y = .resid)) +
+  geom_point(colour="red", size=0.5) +
+  geom_smooth() + 
+  labs(title='Residuals v. log(predator weight): Herring', x='log(predator weight)', y='Residuals')
+```
+
+## Residual plots for the individual predator species
 
 ```{r applying residual plots, echo=TRUE, message=FALSE}
 model<- lm(lppmr~lpred_weight, data=renamed_df) 
@@ -679,15 +719,17 @@ Of the resulting histograms, the following show (approximately) a normal distrib
   * Sole
   * Whiting
 
-Therefore, it could be said that the assumption of a linear relation between the $\log(\text{PPMR})$ and predator weight holds for these 7 species. However, none of the proposed normal distributions are that strongly reliable, hence it is a more likely assumption to choose that there is in fact some dependence between the $\log(\text{PPMR})$ and predator weight.
+Therefore, it could be said that a linear model ($y=mx+c$) is applicable for comparing the $\log(\text{predator weight})$ and $\log(\text{ppmr})$. However, since not all the residuals are strongly normally distributed, we will instead use a different model for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
 
 # Introducing a mixed effects model
+
+We will introduce a mixed effects model to account for some variance that external effects may cause to the data.
 
 ## Building up the model {.tabset}
 
 ### Basic Linear model
 
-Mathematically represented by:
+This is mathematically represented by:
 $$
   \log(\text{ppmr}) = m \times \log(\text{predator weight}) + c
 $$
@@ -784,7 +826,7 @@ renamed_df %>%
     mutate(lppmr = fitted(three)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
-    labs( x='log(predator weight)', y='log(ppmr)') +
+    labs(x='log(predator weight)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
@@ -814,79 +856,126 @@ Here, all the random effects are modeled with a randomly distributed slope and i
 
 ### Trial a
 
-Fixed effects: lpred_weight
-
-Renamed effects: haul_id_short
-
-```{r trial a, echo=TRUE}
-a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = renamed_df, REML=FALSE)
-
-summary(a)
-
-hist(resid(a), border='red', col="transparent", main = paste("Histogram of residuals" ))
-#Creates a histogram of the distribution of the residuals
-```
-
 This is mathematically represented by:
 $$
-  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
-        + \epsilon_{ij}
+  \log(\text{ppmr})_i = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
+            + A_{0[j]} + \epsilon_{ij}
 $$
 
 Where:
 
-* $\alpha_{1j[i]}$ is the slope - this is different for every predator species
-* $\beta_{0j[i]}$ is the intercept term - this is different for every predator species
+* $\beta_{0}$ is the intercept term (the y-intercept)
+* $\beta_{1}$ is the fixed effect (slope) for $\log(\text{predator weight})$
+* $A_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the haul_id
+* $B_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the year
+* $\epsilon_{ij}$ is the residual/error term for each observation $j$
+And:
 
+* Fixed effects: lpred_weight
+* Random effects: haul_id_short
+
+```{r trial a, echo=TRUE}
+a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = renamed_df, REML=FALSE)
+
+a
+
+ggplot(renamed_df, aes(x = resid(a))) +
+  geom_density(colour="red") +
+  labs(x='residuals of model a', y='Density of observations', 
+       title="Density plot of the residuals of model a")
+#Creates a density plot of the distribution of the residuals
+
+print(VarCorr(a),comp="Variance")
+cat("AIC:", AIC(a))
+```
 
 ### Trial b
 
-Fixed effects: lpred_weight
+Mathematical representation
+$$
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
+              + A_{0[j]} + B_{0[j]} + \epsilon_{ij}
+$$
 
-Renamed effects: haul_id_short, year
+Where:
+
+* $B_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the year
+
+And:
+
+* Fixed effects: lpred_weight
+* Random effects: haul_id_short, year
 
 ```{r trial b, echo=TRUE}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
 b
-hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
+
+ggplot(renamed_df, aes(x = resid(b))) +
+  geom_density(colour="red") +
+  labs(x='residuals of model b', y='Density of observations', 
+       title="Density plot of the residuals of model b")
+
 print(VarCorr(b),comp="Variance")
 cat("AIC:", AIC(b))
 ```
 
 ### Trial c
 
-Fixed effects: lpred_weight
+Mathematical representation
+$$
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
+              + A_{0[j]} + B_{0[j]} + C_{0[j]} + \epsilon_{ij}
+$$
 
-Renamed effects: haul_id_short, year, ices_rectangle
+Where:
+
+* $C_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the ices_rectangle
+
+And:
+
+* Fixed effects: lpred_weight
+* Random effects: haul_id_short, year, ices_rectangle
 
 ```{r trial c, echo=TRUE}
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
 c
-hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
+
+ggplot(renamed_df, aes(x = resid(c))) +
+  geom_density(colour="red") +
+  labs(x='residuals of model c', y='Density of observations', 
+       title="Density plot of the residuals of model c")
+
 print(VarCorr(c),comp="Variance")
 cat("AIC:", AIC(c))
 ```
 
 ### Trial d
 
-Fixed effects: lpred_weight
+Mathematical representation
+$$
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
+              + A_{0[j]} + B_{0[j]} + C_{0[j]} + D_{0[j]} + \epsilon_{ij}
+$$
 
-Renamed effects: haul_id_short, year, ices_rectangle, pred_species
+With:
+
+* Fixed effects: lpred_weight
+* Random effects: haul_id_short, year, ices_rectangle, pred_species
 
 ```{r trial d, echo=TRUE}
 d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
 d
-hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
+
+ggplot(renamed_df, aes(x = resid(d))) +
+  geom_density(colour="red") +
+  labs(x='residuals of model d', y='Density of observations', 
+       title="Density plot of the residuals of model d")
+#Creates a density plot of the distribution of the residuals
+
 print(VarCorr(d),comp="Variance")
 cat("AIC:", AIC(d))
 ```
 
-Mathematical representation
-$$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} + 
-                \beta_{2} (\text{predator species})_{j} + A_{0[j]} + B_{0[j]} + 
-                C_{0[j]} + \epsilon_{ij}
-$$
 
 This model has the following variables:
 
@@ -896,7 +985,6 @@ $i$           | the group           | -           | -
 $j$           | the item            | -           | -
 $\beta_{0}$   | the intercept term  |  4.6499  | fixed effects -> intercept -> estimate
 $\beta_{1}$   | the fixed effect (slope) for $\log(\text{pred weight})$ | 0.2307  | fixed effects -> lpred_weight -> estimate
-$\beta_{2}$   | the fixed effect for $\text{predator species}$| (?)  | -
 $A_{0[j]}$    | the random intercept for item $j$ (dependent on the haul_id_short term) | - | -
 $\omega_{A[00]}$ |  s.d. for A, haul_id_short | 2.56161 |random effects -> groups -> ices_rectangle -> std. dev.
 $B_{0[j]}$    | random intercept for dep. on the year term | -           | -
@@ -907,8 +995,7 @@ $\epsilon_{ij}$ | the residual/error term for each individual item | 0.45300 | r
  
 Note: 
 
-  * $A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
-  * Value of $\beta_{2} = $ should be individual for each pred species??
+$A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
 
 ## Outputs
 
