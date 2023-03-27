@@ -533,19 +533,17 @@ We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predat
 ## Gradients of the plots
 
 ```{r ppmrvp gradients, echo=TRUE}
-species_grad_ppmr=c()
 j <- 1
-#creates an empty vector called 'species_grad_ppmr'
-#setting j=1 for the while loop
+species_grad_ppmr = c()
 
 while(j<=length(species_list)){
-  species_df <- renamed_df %>% filter("Predator_species" == fixed(species_list[j]))
+  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[j]))
   grad <- coef(lm((species_df$lppmr)~(species_df$lpred_weight)))
   species_grad_ppmr[j] <- grad[2]
   j=j+1
 }
 
-ppmrvp_grads <- data.frame(pred_species=c(species_list),
+ppmrvp_grads <- data.frame("Predator_species"=c(species_list),
                         gradient=c(species_grad_ppmr))
 
 kable(ppmrvp_grads)
