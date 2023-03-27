@@ -12,8 +12,8 @@ output:
 ```{r setup, echo=TRUE, message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE) 
-#include=FALSE, echo=FALSE and warning=FALSE ensure the code and any error messages aren't shown in the output HTML file
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE) 
+#message=FALSE, echo=FALSE and warning=FALSE ensure any error messages aren't shown in the output HTML file
 
 #message=FALSE means no output messages are printed on the knitted HMTL file
 #loading any necessary packages
@@ -153,7 +153,7 @@ This graph is looking at the distribution of the weight of prey recorded, i.e. l
 
 There are some potentially interesting results, so results from different ships were plotted on individual curves to further look into these results.
 
-```{r sep by all ships, echo=TRUE}
+```{r sep by all ships, echo=TRUE, fig.height=12, fig.width=15}
 renamed_df$haul_id_short <- gsub("\\-.*", "", renamed_df$haul_id)
 renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
 #the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
@@ -162,8 +162,8 @@ ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch)) +
   labs(title = "Number of prey per stomach v. log(prey weight) - separated by all ship names",
        x="log(prey weight)", y="Number of prey per stomach") + 
   geom_point(size=0.02, colour="red") +
-  theme(strip.text = element_text(size = 10)) + 
-  facet_wrap(~renamed_df$haul_id_short, scale="free_y")
+  theme(strip.text = element_text(size = 5)) + 
+  facet_wrap(~renamed_df$haul_id_short, scale="free_y") 
 ```
 
 Taking a closer look at some of these ships gives the plots below:
@@ -206,9 +206,9 @@ type3 <- length((filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUC
 
 type4 <- length((filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error'))$haul_id_short)
 
-ship_erroneous <- data.frame("Type"=c("y proportional to exp(-x)", "Single prey weight"
+ship_erroneous <- data.frame("Graph_Type"=c("y proportional to exp(-x)", "Single prey weight"
                                       , "Same number of prey per stomach", "Same data"),
-                        "Number of observations"=c(type1, type2, type3, type4))
+                        "Number_of_observations"=c(type1, type2, type3, type4))
 #creates a data frame which shows the number of observations of each error 'type'
 
 kable(ship_erroneous)
@@ -222,7 +222,7 @@ $$
 $$
 
 
-This means that approximately $13%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that final analysis is as reliable as possible.
+This means that approximately $13 \%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that any results are as reliable as possible.
 
 # Prey and predator weight relation
 
@@ -257,8 +257,10 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
        x="log(predator weight)", y="log(prey weight)") + 
   geom_hex(bins = 50) +
   scale_fill_gradient2(low = "black", mid = "orange", high = "red", midpoint = 200) +
-  stat_smooth(method='lm', se=FALSE, colour="blue")
+  stat_smooth(method='lm', se=FALSE, colour="blue") +
+  theme_classic()
 
+#theme_classic() removes the grey background of the plot to make it easier to read and understand
 # stat_smooth adds a line of best fit plotted through the points
 # method='lm' ensures it is a straight line, i.e. a linear model
 # se=FAlSE creates only a single line, with no error of margin included
@@ -268,7 +270,8 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
 #scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
 
 slope <- coef(lm(renamed_df$lprey_weight~renamed_df$lpred_weight))
-paste("slope of the log(prey weight) v. log(predator weight) line of best fit:", slope[2])
+cat("Slope of the log(prey weight) v. log(predator weight) line of best fit:", slope[2])
+#'cat()' prints some output message as purely the characters included in the '()' section
 
 # coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
@@ -284,10 +287,10 @@ Instead, separate the plots by predator species to see if there is some proporti
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
   labs(title = "log(prey weight) v. log(predator weight), separated by predator species", 
        x="log(predator weight)", y="log(prey weight)") +
-  geom_point(size=0.2) + 
+  geom_point(size=0.01, colour="red") + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
-  stat_smooth (method='lm', se=FALSE, colour="red")
+  stat_smooth (method='lm', se=FALSE, colour="black")
 ```
 
 ## Gradients of the plots for each predator species
@@ -309,7 +312,7 @@ while(i<=length(species_list)){
 #i=i+1 increases the value of i each time through this loop to motivate this repeat
 #this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
 
-pvp_grads <- data.frame("Predator Species"=c(species_list),
+pvp_grads <- data.frame("Predator_Species"=c(species_list),
                         Gradient=c(species_grad))
 
 kable(pvp_grads)
@@ -320,7 +323,7 @@ kable(pvp_grads)
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
 
-We are wanting gradient=1 for proportionality. This is true ($\pm 0.5$) for the species:
+We are wanting gradient$=1$ to suggest proportionality between the two variables. This is true ($\pm 0.5$) for the species:
 
  * Cod
  * Common Dab
@@ -335,9 +338,9 @@ We are wanting gradient=1 for proportionality. This is true ($\pm 0.5$) for the 
  * Sprat
  * Whiting
  
-This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one, and so we will continue with this assumption.
+This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one. Therefore, we will continue with this assumption.
 
-This assumption of proportionality allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
+Having proportionality between the predator and prey masses allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
 
 #  PPMR for individual species
 
@@ -389,14 +392,14 @@ herringDF <- renamed_df %>%
 
 ## Weighted by prey biomass
 
-The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top in black.
+The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top as a dashed black line.
 
-```{r Prey biomass weighting, echo=TRUE} 
+```{r Prey biomass weighting, echo=TRUE, messages=FALSE, warning=FALSE} 
 bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
 bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
 
 #weighted.mean gives the arithmetic mean of log(ppmr), where datapoints are weighted by the prey weight of observations
-#similarly, wtd.var is the variance of log(ppmr), where the datapoints are also weighted by the prey weight
+#similarly, wtd.rvar is the variance of log(ppmr), where the datapoints are also weighted by the prey weight
 #standard deviation is defined as the square root of the variance
 #na.rm=TRUE means any rows with missing values (values that equal 'na') aren't included in the mean/variance calculations, but are instead ignored
 
@@ -407,20 +410,26 @@ ggplot(data = herringDF, aes(x=lppmr)) +
           geom_density(aes(weight = prey_weight_g), colour="red") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) + 
           stat_function(fun = dnorm, 
+                        linetype="dashed",
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
           xlim(-5,17)
 
 #axis.text.y adjusts the size of the axis labels on the y-axis so they are most easily readable
 #stat_function adds a normal distribution curve (fun=dnorm) with a mean and standard deviation equal to what was calculated earlier for this data set
+#linetype makes the line for the normal distribution into a dotted (black) line
 #xlim sets limits for the x-axis so that all the necessary data points can be seen
 
-paste("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
-paste("Standard deviation of this:", bio_herringSD)
+cat("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
+
+cat("\n")
+#creates a line break so that the outputs appear on different lines in the knitted html document
+
+cat("Standard deviation of this:", bio_herringSD)
 ```
 
 ## Weighted by number of prey
 
-The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top in black.
+The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top as a dotted black line.
 
 ```{r No of prey weighting, echo=TRUE} 
 no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
@@ -434,21 +443,20 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
           geom_density(aes(weight = no._prey_per_stmch), colour="green") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
           stat_function(fun = dnorm, 
+                        linetype = "dotted",
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
           xlim(0,25)
 
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
 
-paste("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean)
-paste("Standard deviation of this:", no_herringSD)
+cat("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean)
+cat("\n")
+cat("Standard deviation of this:", no_herringSD)
 ```
 
 ## Combined graph
 
-```{r Herring combined graph, echo=TRUE} 
-dev.new(width=10, height=5, unit="in")
-#resizes the plot to make it fit in the output html file in a neater way
-
+```{r Herring combined graph, echo=TRUE, fig.height=6, fig.width=12} 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring,
                with various weightings",
@@ -456,11 +464,15 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
           geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
           geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
           stat_function(fun = dnorm, 
-                        args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
+                        linetype = "dotted",
+                        args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)),
+                        aes(colour="number of prey per stomach - normal curve")) +
           stat_function(fun = dnorm, 
-                        args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
-          theme(plot.title = element_text(size=15)) +
-          scale_color_manual(name='Weightings', values=c('green', 'red')) +
+                        linetype = "dashed",
+                        args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)),
+                        aes(colour="prey biomass - normal curve")) +
+          theme(plot.title = element_text(size=20)) +
+          scale_color_manual(name='Lines', values=c('green', 'black', 'red', 'black')) +
           xlim(-5,25) 
 
 #scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
@@ -477,7 +489,7 @@ and
 * Prey biomass standard deviation: 2.3508789268221
 * Number of prey standard deviation: 2.63330496940788
 
-The mean is shifted by 6.911843 ($= 13.54102 - 6.629177$).
+The mean is shifted by: $13.54102 - 6.629177 = 6.911843$.
 
 The mathematics of shifted means for this difference in weighting is:
 
@@ -501,9 +513,10 @@ Therefore, we can continue with the assumption that there is a difference in the
 
 ```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
-  geom_point(size=0.001) +
-  labs(title = "log(PPMR) v. log(predator weight) plot", x="log(Predator weight)", y="log(PPMR)") + 
-  stat_smooth (method='lm', se=FALSE) + 
+  geom_point(size=0.001, colour="cornflowerblue") +
+  labs(title = "log(PPMR) v. log(predator weight) plot", 
+       x="log(Predator weight)", y="log(PPMR)") + 
+  stat_smooth (method='lm', se=FALSE, colour="black") + 
   facet_wrap(~pred_species, scale="free_y")
 ```
 
@@ -526,7 +539,7 @@ j <- 1
 #setting j=1 for the while loop
 
 while(j<=length(species_list)){
-  species_df <- renamed_df %>% filter(pred_species == fixed(species_list[j]))
+  species_df <- renamed_df %>% filter("Predator_species" == fixed(species_list[j]))
   grad <- coef(lm((species_df$lppmr)~(species_df$lpred_weight)))
   species_grad_ppmr[j] <- grad[2]
   j=j+1
@@ -538,7 +551,7 @@ ppmrvp_grads <- data.frame(pred_species=c(species_list),
 kable(ppmrvp_grads)
 ```
 
-For the assumption to be upheld, we need gradient=0. This is (approximately, by $\pm 0.5$) satisfied for the species:
+For the assumption to be upheld, we need gradient $= 0$. This is (approximately, by $\pm 0.5$) satisfied for the species:
 
  * Cod
  * Common Dab
@@ -553,8 +566,7 @@ For the assumption to be upheld, we need gradient=0. This is (approximately, by 
  * Sprat
  * Whiting
  
-This means that the gradients of 12 out of the possible 16 species $= 0 \pm 0.5$. However, this amount of error is fairly large, so we have not yet proved that the assumption of independence can be upheld for this data set.
-
+This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not yet supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator weight})$ can be upheld for this data set.
 
 ## Different weightings of the line of best fit
 
@@ -566,41 +578,46 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
   geom_point(size=0.5) +
   labs(title = "log(PPMR) v. log(predator weight) plot: Poor Cod", 
        x="log(Pred weight)", y="log(PPMR)") + 
-  facet_wrap(~pred_species, scale="free_y") + 
-  stat_smooth(aes(weight=no._prey_per_stmch, colour='by no. of prey in stomach'), 
-              method='lm', se=FALSE) +
+  stat_smooth(aes(weight=no._prey_per_stmch, colour='by number of prey in stomach'), 
+              method='lm', se=FALSE, linetype="dotted") +
+  stat_smooth(aes(weight=prey_weight_g, colour='by prey biomass'), 
+              method='lm', se=FALSE, linetype="dashed") +
   stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
-  stat_smooth(aes(weight=prey_weight_g, colour='by prey bio'), method='lm', se=FALSE) +
   stat_summary(fun.data=mean_se, geom="linerange") +
-  scale_colour_manual(name="Weightings",
-                     values=c('by no. of prey in stomach'='green', 
-                              'no weighting'='blue', 'by prey bio'='red'))
+  scale_colour_manual(name="Weightings", values=c('green', 'red', 'blue')) +
+  scale_linetype_manual(values = c(rep("solid", 2), rep("dashed", 2), "twodash"))
+  theme_classic()
+
 # se=FALSE doesn't add an area of error around the LOBF 
 # fun.data=mean_se calculates the mean and standard error for each point
-# linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calcuated in 'fun.data=mean_se')
+# linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
-paste("slope of the log(ppmr) v. log(predator weight) line of best fit for poor cod:")
+cat("slope of the log(ppmr) v. log(predator weight) line of best fit for poor cod:")
+cat("\n")
 
 #weighted by number of prey per stomach
 perstmch_weighting <- 
   coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
-paste("i) Weighted by no prey in the stomach:", perstmch_weighting[2])
-
-#no weighting
-no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
-paste("ii) No weighting in the calculation:", no_weighting[2])
+cat("i) Weighted by no prey in the stomach:", perstmch_weighting[2])
+cat("\n")
 
 #weighted by prey biomass
 biomass_weighting <- 
   coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
-paste("iii) Weighted by prey biomass:", biomass_weighting[2])
+cat("ii) Weighted by prey biomass:", biomass_weighting[2])
+cat("\n")
+
+
+#no weighting
+no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
+cat("iii) No weighting in the calculation:", no_weighting[2])
 ```
 
 Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
 
-1. blue: by number of prey per stomach
-2. red: no weighting in the LOBF
-3. green: by prey biomass
+1. green and dotted: by number of prey per stomach
+2. red and dashed: by prey biomass
+3. blue: no weighting in the LOBF
 
 When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope=0) is true when looking at a prey biomass weighting.
 
@@ -833,7 +850,7 @@ b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
 b
 hist(resid(b), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(b),comp="Variance")
-paste("AIC:", AIC(b))
+cat("AIC:", AIC(b))
 ```
 
 ### Trial c
@@ -847,7 +864,7 @@ c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
 c
 hist(resid(c), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(c),comp="Variance")
-paste("AIC:", AIC(c))
+cat("AIC:", AIC(c))
 ```
 
 ### Trial d
@@ -861,7 +878,7 @@ d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
 d
 hist(resid(d), border='red', col="transparent", main = paste("Histogram of residuals" ))
 print(VarCorr(d),comp="Variance")
-paste("AIC:", AIC(d))
+cat("AIC:", AIC(d))
 ```
 
 Mathematical representation
