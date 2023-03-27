@@ -10,11 +10,6 @@ output:
 ---
 
 ```{r setup, echo=TRUE, message=FALSE}
-#number_sections: yes
-    #code_folding: hide
-    #theme: cerulean
-#html_document:
-
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE) 
@@ -34,6 +29,7 @@ library(lme4)
 library(RColorBrewer)
 library(viridis)
 library(hexbin)
+library(ggpattern) 
 ```
 
 ```{r loading, message=FALSE, echo=TRUE}
@@ -114,14 +110,17 @@ There are some other column names which are useful to note:
 
 ```{r distribution of prey, echo=TRUE}
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
-  geom_bar(stat="count", width=0.7) +
+   geom_bar_pattern(stat = "count",
+                    pattern_color = "white",
+                    pattern_fill = "black",
+                    aes(pattern = prey_type, pattern_angle = prey_type)) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_brewer(palette = "Dark2", name = "Prey Type") +
   labs(title = "Distribution of prey types for each predator species", x="Prey type",
        y="Number of Observations")
-
-#geom_bar() creates a bar chart from the specified data
+ 
+#geom_bar_pattern() creates a bar chart from the specified data, where each category has a different pattern used to fill it
+#Using different patterns as well as different colours to fill the bars ensures the data can be understood if looked at in grey scale, and makes the document accessible for colour blind people
 #facet_wrap() means an individual bar chart is created for each individual predator species
 #'theme()' adjusts the labels along the x-axis so they lie slightly angled to the vertical direction so they are easy to read
 #scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between, and renames the title of the key to show which colour means what
