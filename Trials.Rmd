@@ -877,11 +877,10 @@ a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = renamed_
 
 a
 
-ggplot(renamed_df, aes(x = resid(a))) +
-  geom_density(colour="red") +
-  labs(x='residuals of model a', y='Density of observations', 
-       title="Density plot of the residuals of model a")
+plot(density(resid(a)), main="ensity plot of the residuals of model a", 
+     xlab="residuals of model a", col="red") 
 #Creates a density plot of the distribution of the residuals
+
 
 print(VarCorr(a),comp="Variance")
 cat("AIC:", AIC(a))
@@ -906,12 +905,11 @@ And:
 
 ```{r trial b, echo=TRUE}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
+
 b
 
-ggplot(renamed_df, aes(x = resid(b))) +
-  geom_density(colour="red") +
-  labs(x='residuals of model b', y='Density of observations', 
-       title="Density plot of the residuals of model b")
+plot(density(resid(b)), main="Density plot of the residuals of model b",
+     xlab="Residuals of model b", col="red") 
 
 print(VarCorr(b),comp="Variance")
 cat("AIC:", AIC(b))
@@ -938,10 +936,8 @@ And:
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
 c
 
-ggplot(renamed_df, aes(x = resid(c))) +
-  geom_density(colour="red") +
-  labs(x='residuals of model c', y='Density of observations', 
-       title="Density plot of the residuals of model c")
+plot(density(resid(c)), main="Density plot of the residuals of model c",
+     xlab="Residuals of model c", col="red") 
 
 print(VarCorr(c),comp="Variance")
 cat("AIC:", AIC(c))
@@ -964,11 +960,8 @@ With:
 d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
 d
 
-ggplot(renamed_df, aes(x = resid(d))) +
-  geom_density(colour="red") +
-  labs(x='residuals of model d', y='Density of observations', 
-       title="Density plot of the residuals of model d")
-#Creates a density plot of the distribution of the residuals
+plot(density(resid(d)), main="Density plot of the residuals of model d",
+     xlab="Residuals of model d", col="red") 
 
 print(VarCorr(d),comp="Variance")
 cat("AIC:", AIC(d))
