@@ -848,7 +848,7 @@ anova(one,two,three)
 #comparing the three models
 ```
 
-## Trialing different models {.tabset}
+## Trialing different models - only for Herring {.tabset}
 
 Here, all the random effects are modeled with a randomly distributed slope and intercept.
 
@@ -867,20 +867,33 @@ Where:
 * $A_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the haul_id
 * $B_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the year
 * $\epsilon_{ij}$ is the residual/error term for each observation $j$
+
 And:
 
 * Fixed effects: lpred_weight
 * Random effects: haul_id_short
 
+To note, 
+
+$A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
+
 ```{r trial a, echo=TRUE}
-a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = renamed_df, REML=FALSE)
+a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
 
 a
 
-plot(density(resid(a)), main="ensity plot of the residuals of model a", 
-     xlab="residuals of model a", col="red") 
-#Creates a density plot of the distribution of the residuals
+herring_df %>% 
+  mutate(lppmr= fitted(a)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator weight) plot for model a: Herring', 
+         x='log(predator weight)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") 
 
+herring_df %>% 
+  mutate(lppmr= fitted(a)) %>% 
+  ggplot(aes(x = resid(a))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
 
 print(VarCorr(a),comp="Variance")
 cat("AIC:", AIC(a))
@@ -904,12 +917,23 @@ And:
 * Random effects: haul_id_short, year
 
 ```{r trial b, echo=TRUE}
-b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
+b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
+          data = herring_df, REML=FALSE)
 
 b
 
-plot(density(resid(b)), main="Density plot of the residuals of model b",
-     xlab="Residuals of model b", col="red") 
+herring_df %>% 
+  mutate(lppmr= fitted(b)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator weight) plot for model b: Herring', 
+         x='log(predator weight)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") 
+
+herring_df %>% 
+  mutate(lppmr= fitted(b)) %>% 
+  ggplot(aes(x = resid(b))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
 
 print(VarCorr(b),comp="Variance")
 cat("AIC:", AIC(b))
@@ -933,11 +957,23 @@ And:
 * Random effects: haul_id_short, year, ices_rectangle
 
 ```{r trial c, echo=TRUE}
-c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
+c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), data = herring_df, REML=FALSE)
+
 c
 
-plot(density(resid(c)), main="Density plot of the residuals of model c",
-     xlab="Residuals of model c", col="red") 
+herring_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator weight) plot for model c: Herring', 
+         x='log(predator weight)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") 
+
+herring_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x = resid(c))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
 
 print(VarCorr(c),comp="Variance")
 cat("AIC:", AIC(c))
@@ -951,22 +987,81 @@ $$
               + A_{0[j]} + B_{0[j]} + C_{0[j]} + D_{0[j]} + \epsilon_{ij}
 $$
 
-With:
+Where:
+
+* $D_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the predator species
+
+And with:
 
 * Fixed effects: lpred_weight
 * Random effects: haul_id_short, year, ices_rectangle, pred_species
 
 ```{r trial d, echo=TRUE}
-d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
+d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species),
+          data = herring_df, REML=FALSE)
 d
 
-plot(density(resid(d)), main="Density plot of the residuals of model d",
-     xlab="Residuals of model d", col="red") 
+herring_df %>% 
+  mutate(lppmr= fitted(d)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator weight) plot for model d: Herring', 
+         x='log(predator weight)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") 
+
+herring_df %>% 
+  mutate(lppmr= fitted(d)) %>% 
+  ggplot(aes(x = resid(d))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model d: Herring', x='Residuals', y='Density')
 
 print(VarCorr(d),comp="Variance")
 cat("AIC:", AIC(d))
 ```
 
+## Mixed effects model - over all species
+
+Using model c
+
+Mathematical representation
+$$
+  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
+              + A_{0[j]} + B_{0[j]} + C_{0[j]} + \epsilon_{ij}
+$$
+
+Where:
+
+* $C_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the ices_rectangle
+
+And:
+
+* Fixed effects: lpred_weight
+* Random effects: haul_id_short, year, ices_rectangle
+
+```{r all species, echo=TRUE}
+all <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
+
+all
+
+renamed_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator weight) plot for model c', 
+         x='log(predator weight)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") +
+  facet_wrap(~pred_species)
+
+herring_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x = resid(c))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density') +
+  facet_wrap(~pred_species)
+
+print(VarCorr(c),comp="Variance")
+cat("AIC:", AIC(c))
+```
 
 This model has the following variables:
 
@@ -983,12 +1078,7 @@ $\omega_{B[00]}$ | [s.d. for B, year] |  0.31411  | -
 $\omega_{C[00]}$ | [s.d. for C, ices_rectangle] | 0.45300   | -
 $C_{0[j]}$    | dep. on the ices_rectangle term | -             | -
 $\epsilon_{ij}$ | the residual/error term for each individual item | 0.45300 | random effects -> groups -> residual -> std. dev.
- 
-Note: 
 
-$A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
-
-## Outputs
 
 Outputs:
 
@@ -999,25 +1089,6 @@ Outputs:
 
 Variance of the groups decreases as other random effects are added to the models.
 But, the error term (standard error) roughly increases as more random effects are added to the model.
-
-## Adding weighting to the models
-
-```{r weighted mixed effects models, echo=TRUE}
-#Do we need weighting? Bc it's not a density plot
-
-weight_mixed <- lmer(lppmr ~ lpred_weight + (1|year), data = herringDF, REML=FALSE)
-
-summary(weight_mixed)
-
-#weighting observations by prey_weight_g
-two <- update(weight_mixed, weights = prey_weight_g)
-summary(two)
-
-#weighting observations by no._prey_per_stmch
-three <- update(weight_mixed, weights = no._prey_per_stmch)
-summary(three)
-
-```
 
 # Citations
 
