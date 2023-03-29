@@ -36,16 +36,22 @@ library(ggpattern)
 load("stomach_dataset.Rdata")
 #loading the dataset to be used in analysis (the dataset is already named stom_df)
 
-df <- stom_df %>% transmute(haul_id, ices_rectangle, year, pred_species, 
+df <- stom_df %>% 
+  transmute(haul_id, ices_rectangle, year, pred_species, 
                             pred_weight_g, pred_length_cm, prey_weight_g, 
                             prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, 
-                            prey_count, n_stomachs, no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
+                            prey_count, n_stomachs, 
+                            no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
 #creating a new data set called 'df' which only contains certain selected columns
 
 df <- df[df$indiv_prey_weight != 0, ]
 df <- df[df$pred_weight_g != 0, ]
 df <- df[df$indiv_prey_weight != Inf, ]
 #Removes any points where the prey weight = Inf or 0, or the predator weight = 0
+
+df<- df[!(is.na(df$year)),]
+df<- df[!(is.na(df$ices_rectangle)),]
+#Removes any points where the value is NA
 ```
 
 ```{r cleaning smaller, message=FALSE, echo=TRUE}
@@ -779,7 +785,9 @@ renamed_df %>%
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
     labs( x='log(predator mass)', y='log(ppmr)') +
-    geom_line(size=1) 
+    geom_line(size=1)
+
+#fitted() gives the fitted values, which are the predicted values of the outcome variable (lppmr) for the model, found using the random distributions of the random variables for the slope and intercept
 ```
 
 Here, there is the same slope for every predator species, but each species has a different intercept.
@@ -833,6 +841,7 @@ Where:
 * $\beta_{0}$ is the overall intercept term
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
+(where $\alpha_{1j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[10]}$ (i.e. $\alpha_{1j} \sim (0, \omega^2_{A[10]})$)).
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
 For this plot, the value of log(predator mass) is modeled to be dependent on the predator species.
@@ -911,8 +920,6 @@ And:
 ```{r trial a, echo=TRUE}
 a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
 
-a
-
 summary(a)
 
 herring_df %>% 
@@ -920,15 +927,15 @@ herring_df %>%
   ggplot(aes(x=lpred_weight, y=lppmr)) + 
   labs(title='log(PPMR) v. log(predator mass) plot for model a: Herring', 
          x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") 
+  geom_point(size=0.001, colour="blue") 
 
 herring_df %>% 
   ggplot(aes(x = resid(a))) +
-  geom_density(colour="red") +
+  geom_density(colour="blue") +
   labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
 
-print(VarCorr(a),comp="Variance")
-cat("AIC:", AIC(a))
+#resid(a) gives the residuals of model a
+#The residuals are found by subtracting the fitted 
 ```
 
 ### Trial b
@@ -955,7 +962,7 @@ And:
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
           data = herring_df, REML=FALSE)
 
-b
+summary(b)
 
 herring_df %>% 
   mutate(lppmr= fitted(b)) %>% 
@@ -967,12 +974,7 @@ herring_df %>%
 herring_df %>% 
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density') +
-  ggplot(aes(x = resid(b))) +
-  geom_density(colour="blue")
-
-print(VarCorr(b),comp="Variance")
-cat("AIC:", AIC(b))
+  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
 ```
 
 ### Trial c
@@ -999,33 +1001,19 @@ And:
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
             (1+lpred_weight|ices_rectangle), data = herring_df, REML=FALSE)
 
-c
+summary(c)
 
-#herring_df %>% 
-#  mutate(lppmr = fitted(c)) %>% 
-#  subset(herring_df, !(herring_df$lppmr %in% lppmr))
-#  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-#  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
-#         x='log(predator mass)', y='log(ppmr)') +
-#  geom_point(size=0.001, colour="red") 
-  
-#herring_df %>% 
-#  ggplot(aes(x = resid(c))) +
-#  geom_density(colour="red") +
-#  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
+herring_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot for model c: Herring', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="green") 
 
-renamed_df %>% 
-    mutate(lppmr = fitted(three)) %>% 
-    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    theme_classic() +
-    labs(x='log(predator mass)', y='log(ppmr)') +
-    geom_line(size=1) 
-
-plot(density(resid(c)), main="Density plot of the residuals of model c",
-     xlab="Residuals of model c", col="red") 
-
-print(VarCorr(c),comp="Variance")
-cat("AIC:", AIC(c))
+herring_df %>% 
+  ggplot(aes(x = resid(c))) +
+  geom_density(colour="green") +
+  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
 ```
 
 
@@ -1034,16 +1022,20 @@ cat("AIC:", AIC(c))
 ```{r comparisons}
 ggplot(aes(x=lpred_weight), data=herring_df) +
   labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_point(aes(y=fitted(a)), colour="blue") +
-  geom_point(aes(y=fitted(b)), colour="red")
+         x='log(predator mass)', y='log(ppmr)', color="Model") +
+  geom_point(aes(y=fitted(a), colour="a"), size=0.5) +
+  geom_point(aes(y=fitted(b), colour="b"), size=0.5) +
+  geom_point(aes(y=fitted(c), colour="c"), size=0.5) +
+  scale_color_manual(values=c("blue", "red", "green"))
 
 ggplot(data=herring_df) +
-  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density') +
-  geom_density(aes(x=resid(a)), colour="blue") +
-  geom_density(aes(x=resid(b)), colour="red")
-#  geom_density(aes(x=resid(c)), colour="green") +
-#  geom_density(aes(x=resid(d)), colour="black")
+  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density', 
+       color="Model", linetype="Model") +
+  geom_density(aes(x=resid(a), colour="a", linetype="a")) +
+  geom_density(aes(x=resid(b), colour="b", linetype="b")) +
+  geom_density(aes(x=resid(c), colour="c", linetype="c")) +
+  scale_color_manual(values=c("blue", "red", "green")) +
+  scale_linetype_manual(values = c("dashed", "dotted", "dotdash"))
 ```
 
 Variance of the groups decreases as other random effects are added to the models.
@@ -1091,40 +1083,35 @@ all <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_wei
 
 summary(all)
 
-plot(density(resid(all)), main="Density plot of the residuals",
-     xlab="Residuals", col="red")
+renamed_df %>% 
+  mutate(lppmr= fitted(all)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="black") +
+  theme_classic()
 
-ggplot(data=renamed_df) +
-  geom_density(aes(x = resid(all)),colour="red") +
-  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
-
-print(VarCorr(c),comp="Variance")
-cat("AIC:", AIC(c))
+renamed_df %>% 
+  ggplot(aes(x = resid(all))) +
+  geom_density(colour="black") +
+  labs(title='Density plot of the residuals', x='Residuals', y='Density')
 ```
 
 This model has the following variables:
 
-Variable name |  Meaning            | Value       |  Where to find
-------------- | -----------         | -------     | -------------
-$i$           | the group           | -           | -
-$j$           | the item            | -           | -
-$\beta_{0}$   | the intercept term  |  4.6499  | fixed effects -> intercept -> estimate
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{pred mass})$ | 0.2307  | fixed effects -> lpred_weight -> estimate
-$A_{0[j]}$    | the random intercept for item $j$ (dependent on the haul_id_short term) | - | -
-$\omega_{A[00]}$ |  s.d. for A, haul_id_short | 2.56161 |random effects -> groups -> ices_rectangle -> std. dev.
-$B_{0[j]}$    | random intercept for dep. on the year term | -           | -
-$\omega_{B[00]}$ | [s.d. for B, year] |  0.31411  | -
-$\omega_{C[00]}$ | [s.d. for C, ices_rectangle] | 0.45300   | -
-$C_{0[j]}$    | dep. on the ices_rectangle term | -             | -
-$\epsilon_{ij}$ | the residual/error term for each individual item | 0.45300 | random effects -> groups -> residual -> std. dev.
-
-
-Outputs:
-
-  * standard deviation for the random effects and residuals (want low values)
-  * fixed effect, i.e. output of a linear model
-
-
+Variable name |  Meaning            | Value   
+------------- | -----------         | ---------    
+$\beta_{0}$   | the intercept term  |   5.12662 
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.28973   
+$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
+$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
+$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074  
+$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
+$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
+$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
+$\omega_{P[00]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the pred_species | 0.7790 
+$\omega_{P[10]}$ |  s.d. for the slope term $P_{1p}$, dependent on the pred_species | 0.1699
+$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935 
 
 # Citations
 
