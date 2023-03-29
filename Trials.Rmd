@@ -672,6 +672,12 @@ ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
 #geom_segment() draws a line from each point to the regressionline 
 ```
 
+This plot shows how distributed the points are in comparison to the line of best fit. For a 'well fitting' line of best fit, we would expect the residuals to be approximately normally distributed. As discussed earlier, the residual of a point is equal to:
+$$
+    \text{Residual} = \text{actual value} - \text{predicted/fitted value} ,
+$$
+where the predicted/fitted value is equal to the value as predicted by the line of best fit.
+
 ### Residuals v. fitted values
 
 ```{r residuals v. fitted values, echo=TRUE, message=FALSE}
@@ -680,10 +686,14 @@ ggplot(herring_model, aes(x = .fitted, y = .resid)) +
   geom_hline(yintercept = 0, colour="grey") +
   labs(title='Plot of the residuals against the fitted values: Herring',
        x='Fitted Values', y='Residuals') +
+  geom_smooth() + 
   theme_classic()
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 #.resid creates a list of the residuals of each individual data point
 ```
+
+
+This graph plots the residual of each observation against its fitted value (as predicted by the line of best fit). This plot is used to detect unequal residual variances and any outliers. We can see that the residuals generally increase as the fitted values increase, which suggests that the residuals are potentially not normally distributed. To look further into this possibility, we will next plot a qqplot.
 
 ### qqplot
 
@@ -694,6 +704,8 @@ qqline(res)
 #for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
 ```
 
+A qqplot (quantile-quantile plot) shows if two data sets come from the same distribution. For this data set, we plot the actual residuals against the expected residuals if the residuals were normally distributed. The points on this graph should fall on the straight line (at a 45 degree angle), and if they don't then the residuals do not appear to be normally distributed.
+
 ### Density of residuals
 
 ```{r density of residuals, echo=TRUE, message=FALSE}
@@ -703,16 +715,7 @@ ggplot(herring_model, aes(x = .resid)) +
 #plots the density of the residuals of the lppmr v lpred_weight graph for Herring
 ```
 
-We can see that for the predator species Herring, the residuals do not look like they are normally distributed.
-
-### Residuals v. log(predator mass)
-
-```{r residuals v. lpred_weight, echo=TRUE, message=FALSE}
-ggplot(herring_model, aes(x = lpred_weight, y = .resid)) +
-  geom_point(colour="red", size=0.5) +
-  geom_smooth() + 
-  labs(title='Residuals v. log(predator mass): Herring', x='log(predator mass)', y='Residuals')
-```
+We can see that for the predator species Herring, the residuals do not look like they are normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{\text{ppmr}}$ and $\log{\text{predator species}}$ are independent of each other. 
 
 ## Residual plots for the individual predator species
 
