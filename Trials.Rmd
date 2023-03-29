@@ -72,8 +72,8 @@ renamed_df = df %>%
 #Creates a new data frame (called 'renamed_df') with these replaced names
 
 species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
-                     "Horse Mackerel", "Mackerel", "Megrim", "Monkfish", "Norway Pout",  "Plaice",
-                     "Poor Cod", "Sole", "Sprat", "Whiting")
+                     "Horse Mackerel", "Mackerel", "Megrim", "Monkfish", "Norway Pout",
+                      "Plaice", "Poor Cod", "Sole", "Sprat", "Whiting")
 #Creates an array called 'species_list', which is list of the predator species we are focusing on in this project
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
@@ -131,10 +131,10 @@ These are individual bar charts showing the distribution of the type of prey eac
 The prey types are:
 
 * Benthos: organisms that live on/near the bottom of a body of water
-* Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers)
-* Nekton: the actively swimming aquatic organisms
-* Other: misc. types that don't fit into the other categories
-* Zooplankton: animal plankton (plankton are aquatic organisms that are unable to swim effectively against currents)
+* Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers). Fish are a type of nekton, but for this data set fish are recorded as separate entities.
+* Nekton: the actively swimming aquatic organisms that can resist a strong current of water (the classification of nekton for this data set excludes any fish)
+* Other: miscellaneous types of aquatic animals that don't fit into the other categories
+* Zooplankton: animal types of plankton (where plankton are aquatic organisms that are unable to swim effectively against currents)
 
 We can see that some predators eat a range of prey types (e.g. Whiting), while others prefer to eat a single prey type in abundance (e.g. European Hake and Monkfish mostly consume fish as their prey).
 
@@ -460,22 +460,27 @@ cat("Standard deviation of this:", no_herringSD)
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring,
                with various weightings",
-               x="log(PPMR)", y="Number/biomass density of observations") +
-          geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass")) + 
-          geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach")) + 
+               x="log(PPMR)", y="Number/biomass density of observations",
+               color="Line", linetype="Line") +
+          geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass",
+                           linetype="prey biomass")) + 
+          geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach",
+                           linetype="number of prey per stomach")) + 
           stat_function(fun = dnorm, 
-                        linetype = "dotted",
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)),
-                        aes(colour="number of prey per stomach - normal curve")) +
-          stat_function(fun = dnorm, 
-                        linetype = "dashed",
+                        aes(colour="number of prey per stomach - normal curve",
+                            linetype="number of prey per stomach - normal curve")) +
+          stat_function(fun = dnorm,
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)),
-                        aes(colour="prey biomass - normal curve")) +
+                        aes(colour="prey biomass - normal curve",
+                            linetype="prey biomass - normal curve")) +
           theme(plot.title = element_text(size=20)) +
-          scale_color_manual(name='Lines', values=c('green', 'black', 'red', 'black')) +
-          xlim(-5,25) 
+          scale_color_manual(values=c('green', 'black', 'red', 'black')) +
+          scale_linetype_manual(values = c("solid", "dashed", "solid", "dotted")) +
+          xlim(-5,25)
 
 #scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
+#scale_linetype_manual manually adds a key to the graph to describe what the differently shaped lines represent (e.g. some lines are dotted, dashed or solid)
 #each curve is given a name using 'aes(colour="")', and these are then given a specific colour using 'values='
 ```
 
@@ -507,28 +512,28 @@ There is a difference in expected and actual prey biomass weighted mean of 0.305
 
 Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
 
-# Predator weight against ppmr
+# Predator mass against ppmr
 
-## Plotting ppmr against predator weight, separated by predator species
+## Plotting ppmr against predator mass, separated by predator species
 
-```{r pred weight v. ppmr, echo=TRUE, message=FALSE}
+```{r pred mass v. ppmr, echo=TRUE, message=FALSE}
 ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.001, colour="cornflowerblue") +
-  labs(title = "log(PPMR) v. log(predator weight) plot", 
-       x="log(Predator weight)", y="log(PPMR)") + 
+  labs(title = "log(PPMR) v. log(predator mass) plot", 
+       x="log(Predator mass)", y="log(PPMR)") + 
   stat_smooth (method='lm', se=FALSE, colour="black") + 
   facet_wrap(~pred_species, scale="free_y")
 ```
 
-Graphing $\log$(predator weight) v. $\log$(PPMR) for individual predator species to see if the predator weight related to the ppmr. 
+Graphing $\log$(predator mass) v. $\log$(PPMR) for individual predator species to see if the predator mass related to the ppmr. 
 
 $$
-    \log(\text{PPMR}) = m \times \log (\text{predator weight}) + c
+    \log(\text{PPMR}) = m \times \log (\text{predator mass}) + c
 $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
 
-We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator weight) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator weight for a certain species (as assumed).
+We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator mass for a certain species (as assumed).
 
 ## Gradients of the plots
 
@@ -564,7 +569,7 @@ For the assumption to be upheld, we need gradient $= 0$. This is (approximately,
  * Sprat
  * Whiting
  
-This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator weight})$ can be upheld for this data set.
+This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator mass})$ can be upheld for this data set.
 
 ## Different weightings of the line of best fit
 
@@ -574,22 +579,24 @@ species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 
 ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
-  labs(title = "log(PPMR) v. log(predator weight) plot: Poor Cod", 
-       x="log(Pred weight)", y="log(PPMR)") + 
-  stat_smooth(aes(weight=no._prey_per_stmch, colour='by number of prey in stomach'), 
-              method='lm', se=FALSE, linetype="dotted") +
-  stat_smooth(aes(weight=prey_weight_g, colour='by prey biomass'), 
-              method='lm', se=FALSE, linetype="dashed") +
-  stat_smooth(aes(colour='no weighting'), method='lm', se=FALSE) +
+  labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
+       x="log(Pred mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
+  stat_smooth(aes(weight=no._prey_per_stmch, color='by number of prey in stomach',  
+                  linetype='by number of prey in stomach'), 
+              method='lm', se=FALSE) +
+  stat_smooth(aes(weight=prey_weight_g, color='by prey biomass', linetype='by prey biomass'), 
+              method='lm', se=FALSE) +
+  stat_smooth(aes(color='no weighting', linetype='no weighting'), method='lm', se=FALSE) +
   stat_summary(fun.data=mean_se, geom="linerange") +
-  scale_colour_manual(name="Weightings", values=c('green', 'red', 'blue')) +
+  scale_color_manual(values=c("green", "red", "blue")) +
+  scale_linetype_manual(values = c("dashed", "dotted", "solid")) +
   theme_classic()
 
 # se=FALSE doesn't add an area of error around the LOBF 
 # fun.data=mean_se calculates the mean and standard error for each point
 # linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
-cat("slope of the log(ppmr) v. log(predator weight) line of best fit for poor cod:")
+cat("slope of the log(ppmr) v. log(predator mass) line of best fit for poor cod:")
 cat("\n")
 
 #weighted by number of prey per stomach
@@ -608,6 +615,14 @@ cat("\n")
 #no weighting
 no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
 cat("iii) No weighting in the calculation:", no_weighting[2])
+
+cat("slope of the log(ppmr) v. log(predator mass) line of best fit for poor cod:",
+    "\n",
+    "i) Weighted by no prey in the stomach:", perstmch_weighting[2],
+    "\n",
+    "ii) Weighted by prey biomass:", biomass_weighting[2],
+    "\n",
+    "iii) No weighting in the calculation:", no_weighting[2])
 ```
 
 Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
@@ -618,11 +633,11 @@ Looking at just the predator species 'poor cod'. There are three LOBF (line of b
 
 When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope$ = 0$) is supported by the data when looking at a prey biomass weighting.
 
-However, given that this slope is only equal to $0$ for one of these three weightings, the above linear models in fact show that the $\log(\text{predator weight})$ and the $\log(\text{PPMR})$ are independent of one another.
+However, given that this slope is only equal to $0$ for one of these three weightings, the above linear models in fact show that the $\log(\text{predator mass})$ and the $\log(\text{PPMR})$ are independent of one another.
 
-## Residuals of the log(predator weight) against log(ppmr) plot {.tabset}
+## Residuals of the log(predator mass) against log(ppmr) plot {.tabset}
 
-We are now proceeding with the idea that the $\log(\text{predator weight})$ and $\log(\text{PPMR})$ are independent of one another, hence the predator weight is independent of the PPMR. 
+We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are independent of one another, hence the predator mass is independent of the PPMR. 
 
 Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
 
@@ -631,21 +646,21 @@ herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
 herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
 res <- resid(herring_model)
 predicted <- predict(herring_model)
-#lm() fits a regression models for log(ppmr) against log(predator weight)
+#lm() fits a regression models for log(ppmr) against log(predator mass)
 #resid() creates a list of the residual of each individual data point
-#predict() gives the predicted values
+#predict() gives the predicted value of a data point by using the previous behaviour and patterns of the data to determine possible future values
 ```
 
-### With residuals of each point to the line of best fit
+### With residuals of each point to the predicted values of each point
 
 ```{r residual to points, echo=TRUE, message=FALSE}
 ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
   geom_smooth(method = "lm", se = FALSE, colour="black") +  
   geom_segment(aes(xend = lpred_weight, yend = predicted), colour="red", size=0.1) +
   geom_point(size=0.5) +
-  labs(title='The log(predator weight) against log(ppmr) graph, 
+  labs(title='The log(predator mass) against log(ppmr) graph, 
        with lines from the individual points to the line of best fit: Herring', 
-       x='log(predator weight)', y='log(ppmr)')
+       x='log(predator mass)', y='log(ppmr)')
 #showing the residuals of each point to the line of best fit
 #geom_smooth() creates the regression line of the regression model from lm()
 #geom_segment() draws a line from each point to the regressionline 
@@ -684,13 +699,13 @@ ggplot(herring_model, aes(x = .resid)) +
 
 We can see that for the predator species Herring, the residuals do not look like they are normally distributed.
 
-### Residuals v. log(predator weight)
+### Residuals v. log(predator mass)
 
 ```{r residuals v. lpred_weight, echo=TRUE, message=FALSE}
 ggplot(herring_model, aes(x = lpred_weight, y = .resid)) +
   geom_point(colour="red", size=0.5) +
   geom_smooth() + 
-  labs(title='Residuals v. log(predator weight): Herring', x='log(predator weight)', y='Residuals')
+  labs(title='Residuals v. log(predator mass): Herring', x='log(predator mass)', y='Residuals')
 ```
 
 ## Residual plots for the individual predator species
@@ -717,7 +732,7 @@ Of the resulting histograms, the following show (approximately) a normal distrib
   * Sole
   * Whiting
 
-Therefore, it could be said that a linear model ($y=mx+c$) is applicable for comparing the $\log(\text{predator weight})$ and $\log(\text{ppmr})$. However, since not all the residuals are strongly normally distributed, we will instead use a different model for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
+Therefore, it could be said that a linear model ($y=mx+c$) is applicable for comparing the $\log(\text{predator mass})$ and $\log(\text{ppmr})$. However, since not all the residuals are strongly normally distributed, we will instead use a different model for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
 
 # Introducing a mixed effects model
 
@@ -729,23 +744,29 @@ We will introduce a mixed effects model to account for some variance that extern
 
 This is mathematically represented by:
 $$
-  \log(\text{ppmr}) = m \times \log(\text{predator weight}) + c
+  \log(\text{ppmr})_i = \beta_1 \times \log(\text{predator mass})_i + \beta_0
 $$
+
+Where:
+
+* $i$ is the individual observation
+* $\beta_{0}$ is the overall intercept term (defined at the point where $\log(\text{predator mass}) = 0$.)
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 
 ```{r linear model, echo=TRUE}
 renamed_df %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_line(size=1) + 
-    labs( x='log(predator weight)', y='log(ppmr)') +
+    labs( x='log(predator mass)', y='log(ppmr)') +
     theme_classic()
 #theme_classic() removes the grey background of the plot to make it easier to read
 ```
 
-This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator weight})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, we will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
+This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, we will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
 
 ### First trial
 
-Fixed effects: log(predator weight)
+Fixed effects: log(predator mass)
 
 Random effects: predator species (fixed slopes and random intercepts)
 
@@ -757,31 +778,32 @@ renamed_df %>%
     mutate(lppmr= fitted(one)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
-    labs( x='log(predator weight)', y='log(ppmr)') +
+    labs( x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
 Here, there is the same slope for every predator species, but each species has a different intercept.
 
 This is mathematically represented by:
+
 $$
-  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_1 \times \log(\text{predator weight})_i 
-        + \epsilon_{ij}
+  \log(\text{ppmr})_{ij} = \beta_{0} + \alpha_{0j} + 
+        \beta_{1} \log(\text{predator mass})_i + \epsilon_{ij}
 $$
 
 Where:
 
 * $i$ is the individual observation
-* $j$ is the group (the predator species)
-* $\alpha_1$ is the slope - this is the same for all predator species
-* $\beta_{0j[i]}$ is the intercept term - this is different for each predator species
-* $\epsilon_{ij}$ is the error term
-
-Note, the intercept is defined at $\log(\text{predator weight}) = 0$.
+* $j$ is the predator species
+* $\beta_{0}$ is the overall intercept term
+* $\alpha_{0j}$ is the random intercept term for predator species $j$
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \omega^2_{A[00]})$)).
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
+* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
 ### Second trial
 
-Fixed effects: log(predator weight)
+Fixed effects: log(predator mass)
 
 Random effects: predator species (random slope and fixed intercept)
 
@@ -793,26 +815,31 @@ renamed_df %>%
     mutate(lppmr = fitted(two)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
-    labs( x='log(predator weight)', y='log(ppmr)') +
+    labs( x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
 This is mathematically represented by:
+
 $$
-  \log(\text{ppmr})_i = \beta_{0} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
-        + \epsilon_{ij}
+  \log(\text{ppmr})_{ij} = \beta_{0} + 
+        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_i + \epsilon_{ij}
 $$
 
 Where:
 
-* $\alpha_{1j[i]}$ is the slope - this is different for each predator species
-* $\beta_{0}$ is the intercept term - this is the same for every predator species
+* $i$ is the individual observation
+* $j$ is the predator species
+* $\beta_{0}$ is the overall intercept term
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
+* $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
+* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
-For this plot, the value of log(predator weight) is modeled to be dependent on the predator species.
+For this plot, the value of log(predator mass) is modeled to be dependent on the predator species.
 
 ### Third trial
 
-Fixed effects: log(predator weight)
+Fixed effects: log(predator mass)
 
 Random effects: predator species (random slope and random intercept)
 
@@ -824,22 +851,26 @@ renamed_df %>%
     mutate(lppmr = fitted(three)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
-    labs(x='log(predator weight)', y='log(ppmr)') +
+    labs(x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1) 
 ```
 
 This is mathematically represented by:
 $$
-  \log(\text{ppmr})_i = \beta_{0j[i]} + \alpha_{1j[i]} \times \log(\text{predator weight})_i 
-        + \epsilon_{ij}
+  \log(\text{ppmr})_{ij} = \beta_{0} + \alpha_{0j} + 
+        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_i + \epsilon_{ij}
 $$
 
 Where:
 
-* $\alpha_{1j[i]}$ is the slope - this is different for every predator species
-* $\beta_{0j[i]}$ is the intercept term - this is different for every predator species
-
-For this plot, the value of log(predator weight) is modeled to be dependent on the predator species.
+* $i$ is the individual observation
+* $j$ is the predator species
+* $\beta_{0}$ is the overall intercept term
+* $\alpha_{0j}$ is the random intercept term for predator species $j$
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \omega^2_{A[00]})$)).
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
+* $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
+* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
 ### Comparing the models
 
@@ -855,42 +886,43 @@ Here, all the random effects are modeled with a randomly distributed slope and i
 ### Trial a
 
 This is mathematically represented by:
-$$
-  \log(\text{ppmr})_i = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
-            + A_{0[j]} + \epsilon_{ij}
+
+$$  
+\log(\text{ppmr})_{ih} = \beta_{0} + H_{0h} + 
+        (\beta_{1} + H_{1h}) \log(\text{predator mass})_i + \epsilon_{ih}
 $$
 
 Where:
 
-* $\beta_{0}$ is the intercept term (the y-intercept)
-* $\beta_{1}$ is the fixed effect (slope) for $\log(\text{predator weight})$
-* $A_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the haul_id
-* $B_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the year
-* $\epsilon_{ij}$ is the residual/error term for each observation $j$
+* $i$ is the individual observation
+* $h$ is the different haul_id name
+* $\beta_{0}$ is the overall intercept term
+* $H_{0h}$ is the random intercept term for haul_id $h$
+(where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{H[00]}$ (i.e. $H_{0h} \sim (0, \omega^2_{H[00]})$)).
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
+* $H_{1h}$ is the slope term that's dependent on the random effect (the haul_id)
+* $\epsilon_{ih}$ is the error term, which describes the residuals of each point
 
 And:
 
 * Fixed effects: lpred_weight
 * Random effects: haul_id_short
 
-To note, 
-
-$A_{0[j]}$ is normally distributed with a mean of 0 and a standard deviation $\omega_{00}$ (i.e. $I_{0[j]} \sim \mathcal{N} (0,\omega_{A[00]}^2)$)
-
 ```{r trial a, echo=TRUE}
 a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
 
 a
 
-herring_df %>% 
-  mutate(lppmr= fitted(a)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator weight) plot for model a: Herring', 
-         x='log(predator weight)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") 
+summary(a)
 
 herring_df %>% 
   mutate(lppmr= fitted(a)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot for model a: Herring', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="red") 
+
+herring_df %>% 
   ggplot(aes(x = resid(a))) +
   geom_density(colour="red") +
   labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
@@ -902,14 +934,17 @@ cat("AIC:", AIC(a))
 ### Trial b
 
 Mathematical representation
-$$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
-              + A_{0[j]} + B_{0[j]} + \epsilon_{ij}
+$$  
+  \log(\text{ppmr})_{ihy} = \beta_{0} + H_{0h} + Y_{0y} +
+        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_i + \epsilon_{ihyr}
 $$
 
 Where:
 
-* $B_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the year
+* $y$ is the different year the observation was taken
+* $Y_{0y}$ is the random intercept term for haul_id $h$
+(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \omega^2_{Y[00]})$)).
+* $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
 
 And:
 
@@ -925,15 +960,16 @@ b
 herring_df %>% 
   mutate(lppmr= fitted(b)) %>% 
   ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator weight) plot for model b: Herring', 
-         x='log(predator weight)', y='log(ppmr)') +
+  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
+         x='log(predator mass)', y='log(ppmr)') +
   geom_point(size=0.001, colour="red") 
 
 herring_df %>% 
-  mutate(lppmr= fitted(b)) %>% 
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density') +
+  ggplot(aes(x = resid(b))) +
+  geom_density(colour="blue")
 
 print(VarCorr(b),comp="Variance")
 cat("AIC:", AIC(b))
@@ -941,15 +977,18 @@ cat("AIC:", AIC(b))
 
 ### Trial c
 
-Mathematical representation
-$$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
-              + A_{0[j]} + B_{0[j]} + C_{0[j]} + \epsilon_{ij}
+Mathematical representation:
+$$  
+  \log(\text{ppmr})_{ihyr} = \beta_{0} + H_{0h} + Y_{0y} + R_{0r} +
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \epsilon_{ihyr}
 $$
 
 Where:
 
-* $C_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the ices_rectangle
+* $r$ is the different ices_rectangle term
+* $R_{0r}$ is the random intercept term for the ices_rectangle $r$
+(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{R[00]}$ (i.e. $R_{0r} \sim (0, \omega^2_{R[00]})$)).
+* $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
 
 And:
 
@@ -962,102 +1001,102 @@ c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
 
 c
 
-herring_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator weight) plot for model c: Herring', 
-         x='log(predator weight)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") 
+#herring_df %>% 
+#  mutate(lppmr = fitted(c)) %>% 
+#  subset(herring_df, !(herring_df$lppmr %in% lppmr))
+#  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+#  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
+#         x='log(predator mass)', y='log(ppmr)') +
+#  geom_point(size=0.001, colour="red") 
+  
+#herring_df %>% 
+#  ggplot(aes(x = resid(c))) +
+#  geom_density(colour="red") +
+#  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
 
-herring_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x = resid(c))) +
-  geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
+renamed_df %>% 
+    mutate(lppmr = fitted(three)) %>% 
+    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+    theme_classic() +
+    labs(x='log(predator mass)', y='log(ppmr)') +
+    geom_line(size=1) 
+
+plot(density(resid(c)), main="Density plot of the residuals of model c",
+     xlab="Residuals of model c", col="red") 
 
 print(VarCorr(c),comp="Variance")
 cat("AIC:", AIC(c))
 ```
 
-### Trial d
 
-Mathematical representation
-$$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
-              + A_{0[j]} + B_{0[j]} + C_{0[j]} + D_{0[j]} + \epsilon_{ij}
-$$
+### Comparing
 
-Where:
+```{r comparisons}
+ggplot(aes(x=lpred_weight), data=herring_df) +
+  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_point(aes(y=fitted(a)), colour="blue") +
+  geom_point(aes(y=fitted(b)), colour="red")
 
-* $D_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the predator species
-
-And with:
-
-* Fixed effects: lpred_weight
-* Random effects: haul_id_short, year, ices_rectangle, pred_species
-
-```{r trial d, echo=TRUE}
-d <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species),
-          data = herring_df, REML=FALSE)
-d
-
-herring_df %>% 
-  mutate(lppmr= fitted(d)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator weight) plot for model d: Herring', 
-         x='log(predator weight)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") 
-
-herring_df %>% 
-  mutate(lppmr= fitted(d)) %>% 
-  ggplot(aes(x = resid(d))) +
-  geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model d: Herring', x='Residuals', y='Density')
-
-print(VarCorr(d),comp="Variance")
-cat("AIC:", AIC(d))
+ggplot(data=herring_df) +
+  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density') +
+  geom_density(aes(x=resid(a)), colour="blue") +
+  geom_density(aes(x=resid(b)), colour="red")
+#  geom_density(aes(x=resid(c)), colour="green") +
+#  geom_density(aes(x=resid(d)), colour="black")
 ```
+
+Variance of the groups decreases as other random effects are added to the models.
+But, the error term (standard error) roughly increases as more random effects are added to the model.
 
 ## Mixed effects model - over all species
 
-Using model c
+Model c appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects: haul_id_short, year, ices_rectangle), but we also introduce a fourth random effect of pred_species.
 
 Mathematical representation
 $$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \beta_{1} \log(\text{predator weight})_{j} 
-              + A_{0[j]} + B_{0[j]} + C_{0[j]} + \epsilon_{ij}
+  \log(\text{ppmr})_{ihyr} = \beta_{0} + H_{0h} + Y_{0y} + R_{0r} +
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \epsilon_{ihyr}
 $$
-
 Where:
 
-* $C_{0[j]}$ is the random intercept term for each observation $j$ - this is dependent on the ices_rectangle
+* $i$ is the individual observation
+* $h$ is the different haul_id name
+* $y$ is the different haul_id name
+* $r$ is the different haul_id name
+* $p$ is the different haul_id name
+* $\beta_{0}$ is the overall intercept term
+* $H_{0h}$ is the random intercept term for haul_id $h$
+* $Y_{0y}$ is the random intercept term for year $y$
+* $R_{0r}$ is the random intercept term for ices_rectangle $r$
+* $P_{0p}$ is the random intercept term for predator species $p$
+* $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
+* $H_{1h}$ is the slope term that's dependent on the haul_id
+* $Y_{1y}$ is the slope term that's dependent on the year
+* $R_{1r}$ is the slope term that's dependent on the ices_rectangle
+* $P_{1p}$ is the slope term that's dependent on the predator species
+* $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
+
+(where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\omega_{[00]}$ (i.e. $sim (0, \omega^2_{[00]})$)).
 
 And:
 
 * Fixed effects: lpred_weight
-* Random effects: haul_id_short, year, ices_rectangle
+* Random effects: haul_id_short, year, ices_rectangle, pred_species
 
 ```{r all species, echo=TRUE}
 all <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
+            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), 
+            data = renamed_df, REML=FALSE)
 
-all
+summary(all)
 
-renamed_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator weight) plot for model c', 
-         x='log(predator weight)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") +
-  facet_wrap(~pred_species)
+plot(density(resid(all)), main="Density plot of the residuals",
+     xlab="Residuals", col="red")
 
-herring_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x = resid(c))) +
-  geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density') +
-  facet_wrap(~pred_species)
+ggplot(data=renamed_df) +
+  geom_density(aes(x = resid(all)),colour="red") +
+  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
 
 print(VarCorr(c),comp="Variance")
 cat("AIC:", AIC(c))
@@ -1070,7 +1109,7 @@ Variable name |  Meaning            | Value       |  Where to find
 $i$           | the group           | -           | -
 $j$           | the item            | -           | -
 $\beta_{0}$   | the intercept term  |  4.6499  | fixed effects -> intercept -> estimate
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{pred weight})$ | 0.2307  | fixed effects -> lpred_weight -> estimate
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{pred mass})$ | 0.2307  | fixed effects -> lpred_weight -> estimate
 $A_{0[j]}$    | the random intercept for item $j$ (dependent on the haul_id_short term) | - | -
 $\omega_{A[00]}$ |  s.d. for A, haul_id_short | 2.56161 |random effects -> groups -> ices_rectangle -> std. dev.
 $B_{0[j]}$    | random intercept for dep. on the year term | -           | -
@@ -1083,12 +1122,9 @@ $\epsilon_{ij}$ | the residual/error term for each individual item | 0.45300 | r
 Outputs:
 
   * standard deviation for the random effects and residuals (want low values)
-  * no. of observations
   * fixed effect, i.e. output of a linear model
-  * frequency plot of the residuals (want clustered around resid=0)
 
-Variance of the groups decreases as other random effects are added to the models.
-But, the error term (standard error) roughly increases as more random effects are added to the model.
+
 
 # Citations
 
