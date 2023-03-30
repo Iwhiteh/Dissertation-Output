@@ -74,7 +74,7 @@ renamed_df = df %>%
   mutate(pred_species = replace(pred_species, pred_species == "Solea solea", "Sole")) %>% 
   mutate(pred_species = replace(pred_species, pred_species == "Sprattus sprattus", "Sprat")) %>%
   mutate(pred_species = replace(pred_species, pred_species == "Merlangius merlangus", "Whiting"))
-#Renaming the predator species from their latin names (e.g. Capros apers) to their more common names (e.g. Boarfish)
+#Renaming the predator species from their latin names (e.g. Gadus morhua) to their more common names (e.g. Cod)
 #Creates a new data frame (called 'renamed_df') with these replaced names
 
 species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
@@ -84,6 +84,11 @@ species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 #Removes any observations of predator species not in the species_list, i.e. they are irrelevant data points for this project
+
+pred_count <- renamed_df %>% count(pred_species)
+pred_count <- pred_count %>% 
+  transmute(pred_species, no._of_observations=n)
+kable(pred_count)
 
 renamed_df$lppmr <- log(renamed_df$ppmr)
 renamed_df$lprey_weight <- log(renamed_df$indiv_prey_weight)
@@ -232,7 +237,7 @@ This means that approximately $13 \%$ of the data set comes from potentially unr
 
 # Prey and predator weight relation
 
-We are attempting to find a link between the predator weight and the prey weight. Log() of each axis is used to see the proportionality of the axes, where the slope of the added line should = 1. This is because:
+We are attempting to find a link between the predator weight and the prey weight, and $\log()$ of each axis is used to see the proportionality of the axes. The mathematics behind this is as follows:
 
 $$
  \log (\text{prey weight}) = m \times \text{log(predator weight)} + c ,
@@ -245,7 +250,7 @@ Taking the exponential of both sides,
 $$
   \text{prey weight} = \exp({{m}\times{\log(\text{predator weight})}}) + \log(D) ,
 $$
-where log(D) = c. 
+where $\log(D) = c$. 
 
 Finally,
 
@@ -253,7 +258,7 @@ $$
   \text{prey weight} = \text{predator weight}^m \times D
 $$
 
-Hence, we want m=1 to show that log(predator weight) is proportional to log(prey weight) (as expected).
+Hence, we want $m = 1$ to show that predator weight is linearly proportional to prey weight (as expected). However, to simply show that the two variables are dependent on each other, we are looking for instances where $m \neq 0$
 
 ```{r log(prey weight) v. log(pred weight), echo=TRUE, message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
@@ -329,7 +334,9 @@ kable(pvp_grads)
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
 
-We are wanting gradient$=1$ to suggest proportionality between the two variables. This is true ($\pm 0.5$) for the species:
+We are wanting gradient $\neq 0$ to suggest dependence between the predator and prey mass, and specifically gradient $= 1$ to suggest that they are linearly proportional.
+
+The gradient $\neq 0 \pm 0.5$ for the predator species:
 
  * Cod
  * Common Dab
@@ -344,7 +351,7 @@ We are wanting gradient$=1$ to suggest proportionality between the two variables
  * Sprat
  * Whiting
  
-This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are proportional is a reasonable one. Therefore, we will continue with this assumption.
+This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are dependent on each other is a reasonable one. Interestingly, these gradients are all also equal to $1 \pm 0.5$, which suggests that there is a linear proportionality between these variables.
 
 Having proportionality between the predator and prey masses allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
 
@@ -425,12 +432,10 @@ ggplot(data = herringDF, aes(x=lppmr)) +
 #linetype makes the line for the normal distribution into a dotted (black) line
 #xlim sets limits for the x-axis so that all the necessary data points can be seen
 
-cat("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean)
-
-cat("\n")
-#creates a line break so that the outputs appear on different lines in the knitted html document
-
-cat("Standard deviation of this:", bio_herringSD)
+cat("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean,
+    "\n",
+    "Standard deviation of this:", bio_herringSD)
+#"\n| creates a line break so that the outputs appear on different lines in the knitted html document
 ```
 
 ## Weighted by number of prey
@@ -455,9 +460,9 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
 
-cat("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean)
-cat("\n")
-cat("Standard deviation of this:", no_herringSD)
+cat("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean,
+    "\n",
+    "Standard deviation of this:", no_herringSD)
 ```
 
 ## Combined graph
@@ -602,25 +607,16 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
 # fun.data=mean_se calculates the mean and standard error for each point
 # linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
-cat("slope of the log(ppmr) v. log(predator mass) line of best fit for poor cod:")
-cat("\n")
-
 #weighted by number of prey per stomach
 perstmch_weighting <- 
   coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
-cat("i) Weighted by no prey in the stomach:", perstmch_weighting[2])
-cat("\n")
 
 #weighted by prey biomass
 biomass_weighting <- 
   coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
-cat("ii) Weighted by prey biomass:", biomass_weighting[2])
-cat("\n")
-
 
 #no weighting
 no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
-cat("iii) No weighting in the calculation:", no_weighting[2])
 
 cat("slope of the log(ppmr) v. log(predator mass) line of best fit for poor cod:",
     "\n",
@@ -637,13 +633,13 @@ Looking at just the predator species 'poor cod'. There are three LOBF (line of b
 2. red and dashed: by prey biomass
 3. blue: no weighting in the LOBF
 
-When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope$ = 0$) is supported by the data when looking at a prey biomass weighting.
+When weighted by prey biomass, the gradient is equal to zero for 2 s.f.. Hence, the approximation (of slope $ = 0$) is supported by the data when looking at a prey biomass weighting.
 
-However, given that this slope is only equal to $0$ for one of these three weightings, the above linear models in fact show that the $\log(\text{predator mass})$ and the $\log(\text{PPMR})$ are independent of one another.
+However, given that this slope is only equal to $0$ for one of these three weightings, the above linear models in fact show that the $\log(\text{predator mass})$ and the $\log(\text{PPMR})$ are dependent on one another.
 
 ## Residuals of the log(predator mass) against log(ppmr) plot {.tabset}
 
-We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are independent of one another, hence the predator mass is independent of the PPMR. 
+We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are dependent on one another in some way, hence the predator mass is dependent of the PPMR.  
 
 Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
 
