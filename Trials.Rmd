@@ -43,7 +43,9 @@ df <- stom_df %>%
                             prey_count, n_stomachs, 
                             no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
 #creating a new data set called 'df' which only contains certain selected columns
+```
 
+```{r correcting and adjusting the df, message=FALSE, echo=TRUE}
 df <- df[df$indiv_prey_weight != 0, ]
 df <- df[df$pred_weight_g != 0, ]
 df <- df[df$indiv_prey_weight != Inf, ]
@@ -52,9 +54,19 @@ df <- df[df$indiv_prey_weight != Inf, ]
 df<- df[!(is.na(df$year)),]
 df<- df[!(is.na(df$ices_rectangle)),]
 #Removes any points where the value is NA
+
+df$lppmr <- log(df$ppmr)
+df$lprey_weight <- log(df$indiv_prey_weight)
+df$lpred_weight <- log(df$pred_weight_g)
+#Adds columns which take the log value of ppmr, individual prey weight and predator weight to the main data set
 ```
 
-```{r cleaning smaller, message=FALSE, echo=TRUE}
+```{r choosing predator species, message=FALSE, echo=TRUE}
+pred_count <- renamed_df %>% count(pred_species)
+pred_count <- pred_count %>% 
+  transmute(pred_species, no._of_observations=n)
+kable(pred_count)
+
 renamed_df = df %>% 
   mutate(pred_species = replace(pred_species, 
                                 pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
@@ -84,16 +96,6 @@ species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 #Removes any observations of predator species not in the species_list, i.e. they are irrelevant data points for this project
-
-pred_count <- renamed_df %>% count(pred_species)
-pred_count <- pred_count %>% 
-  transmute(pred_species, no._of_observations=n)
-kable(pred_count)
-
-renamed_df$lppmr <- log(renamed_df$ppmr)
-renamed_df$lprey_weight <- log(renamed_df$indiv_prey_weight)
-renamed_df$lpred_weight <- log(renamed_df$pred_weight_g)
-#Adds columns which take the log value of ppmr, individual prey weight and predator weight to the main data set
 ```
 
 # Introduction
@@ -105,16 +107,19 @@ Fish were taken from some location, and their individual stomach contents record
 $$
     \text{no. prey per stomach} = \frac{\text{no. of stomachs sampled}}{\text{total no. of prey}}
 $$
-This is an approximation of the number of prey per stomach for some specific predator, and is called '
-no._prey_per_stmch'.
+This is an approximation of the number of prey per stomach for some specific predator, and is called 'no._prey_per_stmch'.
 
 Using similar logic,'prey_weight_g' is the total weight of prey in the multiple stomachs sampled to make up one datapoint. 'indiv_prey_weight' is then the weight of one single prey individual found in the stomach
-
 
 There are some other column names which are useful to note:
 
 * ices_rectangle accounts for location of points, where each area the points are sampled in is split up into a number of smaller rectangles and each is given a unique name
-* ppmr stands for 'predator prey mass ratio', and is calculated by:
+* ppmr stands for 'predator prey mass ratio', and is calculated using:
+
+$$
+    \text{PPMR} = \frac{\text{predator mass}}{\text{prey mass}}
+$$
+(where the prey mass is the average mass of prey of a certain type found in a single predator stomach)
 * haul_id is a identification tag given to each individual ship which recorded observations
 
 # Distribution of prey type eaten for each predator
@@ -197,6 +202,8 @@ ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) +
   theme(strip.text = element_text(size = 10)) + 
   facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
 ```
+
+
 
 These six graphs show a range of unusual looking points:
 
@@ -516,8 +523,9 @@ $$
 Hence, the expected result is:
 
 $$
-  \text{weighted mean}_{\text{actual prey biomass}} = 13.54102 - (2.63330496940788)^2 = 6.60672493809
+  \text{weighted mean}_{\text{expected prey biomass}} = 13.54102 - (2.63330496940788)^2 = 6.60672493809
 $$
+RECALCULATE
 
 There is a difference in expected and actual prey biomass weighted mean of 0.30511806191. This is a fairly insignificant value, which suggests the shifting mean equations are relatively accurate for this data set with these weightings.
 
@@ -783,7 +791,7 @@ renamed_df %>%
     mutate(lppmr= fitted(one)) %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     theme_classic() +
-    labs( x='log(predator mass)', y='log(ppmr)') +
+    labs(x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1)
 
 #fitted() gives the fitted values, which are the predicted values of the outcome variable (lppmr) for the model, found using the random distributions of the random variables for the slope and intercept
