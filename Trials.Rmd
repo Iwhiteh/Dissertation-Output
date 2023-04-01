@@ -551,6 +551,13 @@ $$
 $$
 
 where m is the gradient (assuming a linear model between the variables) and c is the y-intercept. 
+Then,
+
+$$
+    \text{PPMR} = (\text{predator mass})^m + D
+$$
+
+(where $c = \log(D)$)
 
 We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predator mass) is not related to the log(ppmr). This would mean that the ppmr is independent of the predator mass for a certain species (as assumed).
 
@@ -588,15 +595,15 @@ For the assumption to be upheld, we need gradient $= 0$. This is (approximately,
  * Sprat
  * Whiting
  
-This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $log\text{ppmr}$ and $\log(\text{predator mass})$ can be upheld for this data set.
+This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ can be upheld for this data set.
 
 ## Different weightings of the line of best fit
 
 ```{r poor cod, echo=TRUE, message=FALSE}
-species_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
+PoorCod_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 #creating a data frame only containing observations where the predator species is poor cod.
 
-ggplot(data=species_df, aes(lpred_weight, lppmr)) + 
+ggplot(data=PoorCod_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
   labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
        x="log(Pred mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
@@ -617,25 +624,25 @@ ggplot(data=species_df, aes(lpred_weight, lppmr)) +
 
 #weighted by number of prey per stomach
 perstmch_weighting <- 
-  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$no._prey_per_stmch))
+  coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight, weight=PoorCod_df$no._prey_per_stmch))
 
 #weighted by prey biomass
 biomass_weighting <- 
-  coef(lm(species_df$lppmr~species_df$lpred_weight, weight=species_df$prey_weight_g))
+  coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight, weight=PoorCod_df$prey_weight_g))
 
 #no weighting
-no_weighting <- coef(lm(species_df$lppmr~species_df$lpred_weight))
+no_weighting <- coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight))
 
-cat("slope of the log(ppmr) v. log(predator mass) line of best fit for poor cod:",
+cat("slope of the log(ppmr) v. log(predator mass) line of best fit for Poor Cod:",
     "\n",
-    "i) Weighted by no prey in the stomach:", perstmch_weighting[2],
+    "i) Weighted by number of prey in the stomach:", perstmch_weighting[2],
     "\n",
     "ii) Weighted by prey biomass:", biomass_weighting[2],
     "\n",
     "iii) No weighting in the calculation:", no_weighting[2])
 ```
 
-Looking at just the predator species 'poor cod'. There are three LOBF (line of best fit), weighted by different variables:
+Looking at just the predator species 'Poor Cod'. There are three LOBF (line of best fit), weighted by different variables:
 
 1. green and dotted: by number of prey per stomach
 2. red and dashed: by prey biomass
@@ -652,7 +659,6 @@ We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\
 Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
 
 ```{r Herring info, echo=TRUE, message=FALSE}
-herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
 herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
 res <- resid(herring_model)
 predicted <- predict(herring_model)
@@ -719,7 +725,7 @@ ggplot(herring_model, aes(x = .resid)) +
 #plots the density of the residuals of the lppmr v lpred_weight graph for Herring
 ```
 
-We can see that for the predator species Herring, the residuals do not look like they are normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{\text{ppmr}}$ and $\log{\text{predator species}}$ are independent of each other. 
+We can see that for the predator species Herring, the residuals do not look like they are normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{(\text{ppmr})}$ and $\log{(\text{predator mass})}$ are independent of each other. 
 
 ## Residual plots for the individual predator species
 
@@ -733,19 +739,9 @@ ggplot(model, aes(x = .resid)) +
 #Plotting the density of the residuals for each predator species
 ```
 
-This is a histogram plot of the residuals of the plot, separated for each predator species. We are looking for residuals which are normally distributed around resid=0. 
+This is a histogram plot of the residuals of the plot, separated for each predator species. As discussed earlier, a normal distribution of the density of residuals would suggest that the data fits a linear model. This would then infer that the axes would be related to one another.
 
-Of the resulting histograms, the following show (approximately) a normal distribution:
-
-  * Cod
-  * Common Dab
-  * Horse Mackerel
-  * Norway Pout
-  * Poor Cod
-  * Sole
-  * Whiting
-
-Therefore, it could be said that a linear model ($y=mx+c$) is applicable for comparing the $\log(\text{predator mass})$ and $\log(\text{ppmr})$. However, since not all the residuals are strongly normally distributed, we will instead use a different model for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
+However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another, as they cannot be convincingly modelled under a linear model.
 
 # Introducing a mixed effects model
 
