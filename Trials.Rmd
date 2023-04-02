@@ -741,7 +741,9 @@ ggplot(model, aes(x = .resid)) +
 
 This is a histogram plot of the residuals of the plot, separated for each predator species. As discussed earlier, a normal distribution of the density of residuals would suggest that the data fits a linear model. This would then infer that the axes would be related to one another.
 
-However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another, as they cannot be convincingly modelled under a linear model.
+However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another when modelling using a linear model.
+
+Instead use a different model (a mixed effects model) for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
 
 # Introducing a mixed effects model
 
@@ -772,6 +774,7 @@ renamed_df %>%
 ```
 
 This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, we will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
+
 
 ### First trial
 
@@ -1038,7 +1041,7 @@ ggplot(data=herring_df) +
   geom_density(aes(x=resid(b), colour="b", linetype="b")) +
   geom_density(aes(x=resid(c), colour="c", linetype="c")) +
   scale_color_manual(values=c("blue", "red", "green")) +
-  scale_linetype_manual(values = c("dashed", "dotted", "dotdash"))
+  scale_linetype_manual(values = c("dashed", "solid", "dotdash"))
 ```
 
 Variance of the groups decreases as other random effects are added to the models.
@@ -1088,16 +1091,34 @@ summary(all)
 
 renamed_df %>% 
   mutate(lppmr= fitted(all)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
   labs(title='log(PPMR) v. log(predator mass) plot', 
          x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="black") +
+  geom_line() +
   theme_classic()
 
 renamed_df %>% 
   ggplot(aes(x = resid(all))) +
-  geom_density(colour="black") +
-  labs(title='Density plot of the residuals', x='Residuals', y='Density')
+  geom_density(aes(linetype="line", color="line")) +
+  labs(title='Density plot of the residuals', x='Residuals', y='Density', 
+              color="Line", linetype="Line") +
+  stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
+              args= with(herringDF, c(mean = mean(resid(all)), sd(resid(all))))) +
+  scale_color_manual(values=c('red', 'black')) +
+  scale_linetype_manual(values = c("solid", "dashed"))
+
+renamed_df %>% 
+  ggplot(aes(x = resid(all))) +
+  geom_density(color="red") +
+  labs(title='Density plot of the residuals - separated over species',
+              x='Residuals', y='Density') +
+  facet_wrap(~pred_species)                 
+```
+
+```{r lprey}
+ggplot(renamed_df, aes(x=lprey_weight)) +
+  geom_density() +
+  facet_wrap(~pred_species)   
 ```
 
 This model has the following variables:
