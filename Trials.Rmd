@@ -1134,8 +1134,7 @@ $\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935
 
 ```{r no pred, echo=TRUE}
 no_pred <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), 
-            data = renamed_df, REML=FALSE)
+            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
 
 summary(no_pred)
 
