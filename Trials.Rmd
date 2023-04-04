@@ -801,8 +801,8 @@ Here, there is the same slope for every predator species, but each species has a
 This is mathematically represented by:
 
 $$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \alpha_{0j} + 
-        \beta_{1} \log(\text{predator mass})_i + \epsilon_{ij}
+  \log(\text{ppmr})_{ij} = (\beta_{0} + \alpha_{0j}) + 
+        \beta_{1} \log(\text{predator mass})_{1i} + \epsilon_{ij}
 $$
 
 Where:
@@ -837,7 +837,7 @@ This is mathematically represented by:
 
 $$
   \log(\text{ppmr})_{ij} = \beta_{0} + 
-        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_i + \epsilon_{ij}
+        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_{1i} + \epsilon_{ij}
 $$
 
 Where:
@@ -872,8 +872,8 @@ renamed_df %>%
 
 This is mathematically represented by:
 $$
-  \log(\text{ppmr})_{ij} = \beta_{0} + \alpha_{0j} + 
-        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_i + \epsilon_{ij}
+  \log(\text{ppmr})_{ij} = (\beta_{0} + \alpha_{0j}) + 
+        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_{1i} + \epsilon_{ij}
 $$
 
 Where:
@@ -903,8 +903,8 @@ Here, all the random effects are modeled with a randomly distributed slope and i
 This is mathematically represented by:
 
 $$  
-\log(\text{ppmr})_{ih} = \beta_{0} + H_{0h} + 
-        (\beta_{1} + H_{1h}) \log(\text{predator mass})_i + \epsilon_{ih}
+\log(\text{ppmr})_{ih} = (\beta_{0} + H_{0h}) + 
+        (\beta_{1} + H_{1h}) \log(\text{predator mass})_{1i} + \epsilon_{ih}
 $$
 
 Where:
@@ -948,8 +948,8 @@ herring_df %>%
 
 Mathematical representation
 $$  
-  \log(\text{ppmr})_{ihy} = \beta_{0} + H_{0h} + Y_{0y} +
-        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_i + \epsilon_{ihyr}
+  \log(\text{ppmr})_{ihy} = (\beta_{0} + H_{0h} + Y_{0y}) +
+        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
 $$
 
 Where:
@@ -987,8 +987,8 @@ herring_df %>%
 
 Mathematical representation:
 $$  
-  \log(\text{ppmr})_{ihyr} = \beta_{0} + H_{0h} + Y_{0y} + R_{0r} +
-        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \epsilon_{ihyr}
+  \log(\text{ppmr})_{ihyr} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} )+
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
 $$
 
 Where:
@@ -1051,7 +1051,7 @@ But, the error term (standard error) roughly increases as more random effects ar
 
 Model c appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects: haul_id_short, year, ices_rectangle), but we also introduce a fourth random effect of pred_species.
 
-Mathematical representation
+Mathematical representation:
 $$
   \log(\text{ppmr})_{ihyr} = \beta_{0} + H_{0h} + Y_{0y} + R_{0r} +
         (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \epsilon_{ihyr}
@@ -1115,12 +1115,6 @@ renamed_df %>%
   facet_wrap(~pred_species)                 
 ```
 
-```{r lprey}
-ggplot(renamed_df, aes(x=lprey_weight)) +
-  geom_density() +
-  facet_wrap(~pred_species)   
-```
-
 This model has the following variables:
 
 Variable name |  Meaning            | Value   
@@ -1136,6 +1130,46 @@ $\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rect
 $\omega_{P[00]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the pred_species | 0.7790 
 $\omega_{P[10]}$ |  s.d. for the slope term $P_{1p}$, dependent on the pred_species | 0.1699
 $\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935 
+
+
+```{r no pred, echo=TRUE}
+no_pred <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), 
+            data = renamed_df, REML=FALSE)
+
+summary(no_pred)
+
+renamed_df %>% 
+  mutate(lppmr= fitted(no_pred)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_line() +
+  theme_classic()
+
+renamed_df %>% 
+  ggplot(aes(x = resid(no_pred))) +
+  geom_density(aes(linetype="line", color="line")) +
+  labs(title='Density plot of the residuals', x='Residuals', y='Density', 
+              color="Line", linetype="Line") +
+  stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
+              args= with(herringDF, c(mean = mean(resid(no_pred)), sd(resid(no_pred))))) +
+  scale_color_manual(values=c('red', 'black')) +
+  scale_linetype_manual(values = c("solid", "dashed"))
+
+renamed_df %>% 
+  ggplot(aes(x = resid(no_pred))) +
+  geom_density(color="red") +
+  labs(title='Density plot of the residuals - separated over species',
+              x='Residuals', y='Density') +
+  facet_wrap(~pred_species)                 
+```
+
+```{r lprey}
+ggplot(renamed_df, aes(x=lprey_weight)) +
+  geom_density(aes(weight = no._prey_per_stmch)) +
+  facet_wrap(~pred_species)   
+```
 
 # Citations
 
