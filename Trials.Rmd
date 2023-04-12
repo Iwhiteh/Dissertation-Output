@@ -154,7 +154,28 @@ The prey types are:
 
 We can see that some predators eat a range of prey types (e.g. Whiting), while others prefer to eat a single prey type in abundance (e.g. European Hake and Monkfish mostly consume fish as their prey).
 
+# Distribution of prey masses
+
+```{r lprey density, echo=TRUE}
+ggplot(renamed_df, aes(x=lprey_weight)) +
+  geom_density(aes(weight = no._prey_per_stmch), color="red") +
+  labs(title = "Density of log(prey mass) observations", x="log(prey mass)") + 
+  facet_wrap(~pred_species, scale="free_y")   
+```
+
+This plot shows that different predator species consume differently sized distributions of prey. For example, some species prefer to eat a large quantity of a single size of prey, such as:
+
+* Horse Mackerel has a distinct peak at $\log(\text{prey mass}) = -6.8$ 
+* Norway Pout has one at $log(\text{prey mass}) = -6.7$
+
+And some species show a wider range of prey masses which they consume, such as:
+
+* Cod
+* Sprat, and 
+* Megrim
+
 # Most common prey weights
+
 ```{r log(prey weight) v. number of prey per stomach, echo=TRUE}
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
       labs(title = "Number of prey per predator stomach v. log(prey weight) ", 
@@ -1067,12 +1088,10 @@ Where:
 * $H_{0h}$ is the random intercept term for haul_id $h$
 * $Y_{0y}$ is the random intercept term for year $y$
 * $R_{0r}$ is the random intercept term for ices_rectangle $r$
-* $P_{0p}$ is the random intercept term for predator species $p$
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $H_{1h}$ is the slope term that's dependent on the haul_id
 * $Y_{1y}$ is the slope term that's dependent on the year
 * $R_{1r}$ is the slope term that's dependent on the ices_rectangle
-* $P_{1p}$ is the slope term that's dependent on the predator species
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
 (where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\omega_{[00]}$ (i.e. $sim (0, \omega^2_{[00]})$)).
@@ -1080,35 +1099,34 @@ Where:
 And:
 
 * Fixed effects: lpred_weight
-* Random effects: haul_id_short, year, ices_rectangle, pred_species
+* Random effects: haul_id_short, year, ices_rectangle
 
-```{r all species, echo=TRUE}
-all <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), 
-            data = renamed_df, REML=FALSE)
+```{r final model, echo=TRUE}
+final <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
 
-summary(all)
+summary(final)
 
 renamed_df %>% 
-  mutate(lppmr= fitted(all)) %>% 
+  mutate(lppmr= fitted(final)) %>% 
   ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
   labs(title='log(PPMR) v. log(predator mass) plot', 
          x='log(predator mass)', y='log(ppmr)') +
   geom_line() +
-  theme_classic()
+  theme_classic()  
 
 renamed_df %>% 
-  ggplot(aes(x = resid(all))) +
+  ggplot(aes(x = resid(final))) +
   geom_density(aes(linetype="line", color="line")) +
   labs(title='Density plot of the residuals', x='Residuals', y='Density', 
               color="Line", linetype="Line") +
   stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
-              args= with(herringDF, c(mean = mean(resid(all)), sd(resid(all))))) +
+              args= with(herringDF, c(mean = mean(resid(no_pred)), sd(resid(no_pred))))) +
   scale_color_manual(values=c('red', 'black')) +
   scale_linetype_manual(values = c("solid", "dashed"))
 
 renamed_df %>% 
-  ggplot(aes(x = resid(all))) +
+  ggplot(aes(x = resid(final))) +
   geom_density(color="red") +
   labs(title='Density plot of the residuals - separated over species',
               x='Residuals', y='Density') +
@@ -1119,55 +1137,32 @@ This model has the following variables:
 
 Variable name |  Meaning            | Value   
 ------------- | -----------         | ---------    
-$\beta_{0}$   | the intercept term  |   5.12662 
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.28973   
-$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
-$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
-$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074  
-$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
-$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
-$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
-$\omega_{P[00]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the pred_species | 0.7790 
-$\omega_{P[10]}$ |  s.d. for the slope term $P_{1p}$, dependent on the pred_species | 0.1699
-$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935 
+$\beta_{0}$   | the intercept term  |  4.95089 
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.30651 
+$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.9026
+$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.3481
+$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 0.9498  
+$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1553 
+$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.9367
+$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1736
+$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.9024 
 
-
-```{r no pred, echo=TRUE}
-no_pred <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
-
-summary(no_pred)
-
+```{r abc}
 renamed_df %>% 
-  mutate(lppmr= fitted(no_pred)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_line() +
-  theme_classic()
-
-renamed_df %>% 
-  ggplot(aes(x = resid(no_pred))) +
-  geom_density(aes(linetype="line", color="line")) +
-  labs(title='Density plot of the residuals', x='Residuals', y='Density', 
-              color="Line", linetype="Line") +
-  stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
-              args= with(herringDF, c(mean = mean(resid(no_pred)), sd(resid(no_pred))))) +
-  scale_color_manual(values=c('red', 'black')) +
-  scale_linetype_manual(values = c("solid", "dashed"))
-
-renamed_df %>% 
-  ggplot(aes(x = resid(no_pred))) +
+  ggplot(aes(x = resid(final))) +
   geom_density(color="red") +
   labs(title='Density plot of the residuals - separated over species',
               x='Residuals', y='Density') +
-  facet_wrap(~pred_species)                 
-```
-
-```{r lprey}
-ggplot(renamed_df, aes(x=lprey_weight)) +
-  geom_density(aes(weight = no._prey_per_stmch)) +
   facet_wrap(~pred_species)   
+```
+```{r def}
+renamed_df %>% 
+  mutate(lppmr= fitted(final)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot', 
+         x='log(predator mass)', y='log(ppmr)') +
+  facet_wrap(~pred_species, scale="free_y") +
+  geom_smooth()
 ```
 
 # Citations
