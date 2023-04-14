@@ -63,11 +63,6 @@ df$lpred_weight <- log(df$pred_weight_g)
 ```
 
 ```{r choosing predator species, message=FALSE}
-pred_count <- renamed_df %>% count(pred_species)
-pred_count <- pred_count %>% 
-  transmute(pred_species, no._of_observations=n)
-kable(pred_count)
-
 renamed_df = df %>% 
   mutate(pred_species = replace(pred_species, 
                                 pred_species == "Micromesistius poutassou", "Blue Whiting")) %>%
@@ -681,6 +676,8 @@ We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\
 Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
 
 ```{r Herring info,  message=FALSE}
+herring_df <-  renamed_df %>% filter(pred_species == fixed("Herring"))
+
 herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
 res <- resid(herring_model)
 predicted <- predict(herring_model)
@@ -800,7 +797,7 @@ This plot is very difficult to interpret, and the relationship between the $\log
 
 ### First trial
 
-Fixed effects: log(predator mass)
+Fixed effects: $\log$(predator mass)
 
 Random effects: predator species (fixed slopes and random intercepts)
 
@@ -816,9 +813,12 @@ renamed_df %>%
     geom_line(size=1)
 
 #fitted() gives the fitted values, which are the predicted values of the outcome variable (lppmr) for the model, found using the random distributions of the random variables for the slope and intercept
+
+kable(coef(one)$pred_species)
+#This outputs the intercept and slope terms for each predator species for the fitted model
 ```
 
-Here, there is the same slope for every predator species, but each species has a different intercept.
+Here, there is the same slope for every predator species, but each species group has a different y-intercept (i.e. the line for each predator species group crosses the $\log$(predator mass)=0 line at a different value for $\log$(PPMR).
 
 This is mathematically represented by:
 
@@ -839,13 +839,13 @@ Where:
 
 ### Second trial
 
-Fixed effects: log(predator mass)
+Fixed effects: $\log$(predator mass)
 
 Random effects: predator species (random slope and fixed intercept)
 
 ```{r second}
 two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|pred_species), data = renamed_df, REML=FALSE)
-#(0+ | ) means that the slope of the graph is different for each predator species
+#(0+ | ) means that the slope of the graph is different for each predator species, but they each group has the same intercept
 
 renamed_df %>% 
     mutate(lppmr = fitted(two)) %>% 
@@ -853,6 +853,8 @@ renamed_df %>%
     theme_classic() +
     labs( x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1) 
+
+kable(coef(two)$pred_species)
 ```
 
 This is mathematically represented by:
@@ -872,11 +874,11 @@ Where:
 (where $\alpha_{1j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[10]}$ (i.e. $\alpha_{1j} \sim (0, \omega^2_{A[10]})$)).
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
-For this plot, the value of log(predator mass) is modeled to be dependent on the predator species.
+For this plot, the value of log(predator mass) is modelled to be dependent on the predator species. This allows us to have lines for each predator group which all have the same intercept but differing slopes.
 
 ### Third trial
 
-Fixed effects: log(predator mass)
+Fixed effects: $\log$(predator mass)
 
 Random effects: predator species (random slope and random intercept)
 
@@ -892,6 +894,8 @@ renamed_df %>%
     theme_classic() +
     labs(x='log(predator mass)', y='log(ppmr)') +
     geom_line(size=1) 
+
+kable(coef(three)$pred_species)
 ```
 
 This is mathematically represented by:
@@ -911,6 +915,8 @@ Where:
 * $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
+From the table, we can see this model features slopes and intercepts that are different for each predator group are different.
+
 ### Comparing the models
 
 ```{r forming models}
@@ -923,6 +929,29 @@ anova(one,two,three)
 Here, all the random effects are modeled with a randomly distributed slope and intercept.
 
 ### Trial a
+
+```{r trial a}
+herring_df <-  renamed_df %>% filter(pred_species == fixed("Herring"))
+
+a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
+
+summary(a)
+
+herring_df %>% 
+  mutate(lppmr= fitted(a)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot for model a: Herring', 
+         x='log(predator mass)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="blue") 
+
+herring_df %>% 
+  ggplot(aes(x = resid(a))) +
+  geom_density(colour="blue") +
+  labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
+
+#resid(a) gives the residuals of model a
+#The residuals are found by subtracting the fitted from the predicted values
+```
 
 This is mathematically represented by:
 
@@ -944,49 +973,10 @@ Where:
 
 And:
 
-* Fixed effects: lpred_weight
-* Random effects: haul_id_short
-
-```{r trial a}
-a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
-
-summary(a)
-
-herring_df %>% 
-  mutate(lppmr= fitted(a)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model a: Herring', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="blue") 
-
-herring_df %>% 
-  ggplot(aes(x = resid(a))) +
-  geom_density(colour="blue") +
-  labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
-
-#resid(a) gives the residuals of model a
-#The residuals are found by subtracting the fitted 
-```
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name
 
 ### Trial b
-
-Mathematical representation
-$$  
-  \log(\text{ppmr})_{ihy} = (\beta_{0} + H_{0h} + Y_{0y}) +
-        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
-$$
-
-Where:
-
-* $y$ is the different year the observation was taken
-* $Y_{0y}$ is the random intercept term for haul_id $h$
-(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \omega^2_{Y[00]})$)).
-* $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
-
-And:
-
-* Fixed effects: lpred_weight
-* Random effects: haul_id_short, year
 
 ```{r trial b}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
@@ -1007,25 +997,25 @@ herring_df %>%
   labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
 ```
 
-### Trial c
-
-Mathematical representation:
+Mathematical representation
 $$  
-  \log(\text{ppmr})_{ihyr} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} )+
-        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
+  \log(\text{ppmr})_{ihy} = (\beta_{0} + H_{0h} + Y_{0y}) +
+        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
 $$
 
 Where:
 
-* $r$ is the different ices_rectangle term
-* $R_{0r}$ is the random intercept term for the ices_rectangle $r$
-(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{R[00]}$ (i.e. $R_{0r} \sim (0, \omega^2_{R[00]})$)).
-* $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
+* $y$ is the different year the observation was taken
+* $Y_{0y}$ is the random intercept term for haul_id $h$
+(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \omega^2_{Y[00]})$)).
+* $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
 
 And:
 
-* Fixed effects: lpred_weight
-* Random effects: haul_id_short, year, ices_rectangle
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name, year
+
+### Trial c
 
 ```{r trial c}
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
@@ -1046,6 +1036,23 @@ herring_df %>%
   labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
 ```
 
+Mathematical representation:
+$$  
+  \log(\text{ppmr})_{ihyr} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} )+
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
+$$
+
+Where:
+
+* $r$ is the different ices_rectangle term
+* $R_{0r}$ is the random intercept term for the ices_rectangle $r$
+(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{R[00]}$ (i.e. $R_{0r} \sim (0, \omega^2_{R[00]})$)).
+* $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
+
+And:
+
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name, year, ices_rectangle
 
 ### Comparing
 
@@ -1073,74 +1080,44 @@ But, the error term (standard error) roughly increases as more random effects ar
 
 ## Mixed effects model - over all species
 
-Model c appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects: haul_id_short, year, ices_rectangle), but we also introduce a fourth random effect of pred_species.
+Model c appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
 
 Mathematical representation:
 $$
-  \log(\text{ppmr})_{ihyr} = \beta_{0} + H_{0h} + Y_{0y} + R_{0r} +
-        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \epsilon_{ihyr}
+  \log(\text{ppmr})_{ihyrp} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} + P_{or}) +
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r} + P_{1r}) \log(\text{predator mass})_i +
+        \epsilon_{ihyrp}
 $$
 Where:
 
 * $i$ is the individual observation
-* $h$ is the different haul_id name
-* $y$ is the different haul_id name
-* $r$ is the different haul_id name
-* $p$ is the different haul_id name
+* $h$ is the different ship name
+* $y$ is the the year each observation is taken
+* $r$ is the different ices_rectangle term
+* $p$ is the predator species
 * $\beta_{0}$ is the overall intercept term
-* $H_{0h}$ is the random intercept term for haul_id $h$
-* $Y_{0y}$ is the random intercept term for year $y$
-* $R_{0r}$ is the random intercept term for ices_rectangle $r$
+* $H_{0h}$ is the random intercept term for haul_id, $h$
+* $Y_{0y}$ is the random intercept term for year, $y$
+* $R_{0r}$ is the random intercept term for ices_rectangle, $r$
+* $P_{0p}$ is the random intercept term for the predator species, $p$
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $H_{1h}$ is the slope term that's dependent on the haul_id
 * $Y_{1y}$ is the slope term that's dependent on the year
 * $R_{1r}$ is the slope term that's dependent on the ices_rectangle
+* $P_{1p}$ is the slope term that's dependent on the predator species
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
 (where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\omega_{[00]}$ (i.e. $sim (0, \omega^2_{[00]})$)).
 
 And:
 
-* Fixed effects: lpred_weight
-* Random effects: haul_id_short, year, ices_rectangle
-
-```{r penultimate}
-pen <- lmer(lppmr ~ lpred_weight + pred_species + (1+lpred_weight|haul_id_short) 
-            + (1+lpred_weight|year) + (1+lpred_weight|ices_rectangle),
-            data = renamed_df, REML=FALSE)
-
-summary(pen)
-
-renamed_df %>% 
-  mutate(lppmr= fitted(pen)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_line() +
-  theme_classic() +
-  facet_wrap(~pred_species, scale="free_y")
-
-renamed_df %>% 
-  ggplot(aes(x = resid(pen))) +
-  geom_density(aes(linetype="line", color="line")) +
-  labs(title='Density plot of the residuals', x='Residuals', y='Density', 
-              color="Line", linetype="Line") +
-  stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
-              args= with(herringDF, c(mean = mean(resid(no_pred)), sd(resid(no_pred))))) +
-  scale_color_manual(values=c('red', 'black')) +
-  scale_linetype_manual(values = c("solid", "dashed"))
-
-renamed_df %>% 
-  ggplot(aes(x = resid(pen))) +
-  geom_density(color="red") +
-  labs(title='Density plot of the residuals - separated over species',
-              x='Residuals', y='Density') +
-  facet_wrap(~pred_species)  
-```
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name, year, ices_rectangle, predator species
 
 ```{r final model}
-final <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), data = renamed_df, REML=FALSE)
+ final <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), 
+            data = renamed_df, REML=FALSE)
 
 summary(final)
 
@@ -1158,16 +1135,9 @@ renamed_df %>%
   labs(title='Density plot of the residuals', x='Residuals', y='Density', 
               color="Line", linetype="Line") +
   stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
-              args= with(herringDF, c(mean = mean(resid(no_pred)), sd(resid(no_pred))))) +
+              args= with(final, c(mean = mean(resid(final)), sd(resid(final))))) +
   scale_color_manual(values=c('red', 'black')) +
   scale_linetype_manual(values = c("solid", "dashed"))
-
-renamed_df %>% 
-  ggplot(aes(x = resid(final))) +
-  geom_density(color="red") +
-  labs(title='Density plot of the residuals - separated over species',
-              x='Residuals', y='Density') +
-  facet_wrap(~pred_species)                 
 ```
 
 This model has the following variables:
@@ -1184,28 +1154,38 @@ $\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_
 $\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1736
 $\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.9024 
 
-```{r abc}
-renamed_df %>% 
-  ggplot(aes(x = resid(final))) +
-  geom_density(color="red") +
-  labs(title='Density plot of the residuals - separated over species',
-              x='Residuals', y='Density') +
-  facet_wrap(~pred_species)   
-```
-```{r def}
+## Separated by predator species plots {.tabset}
+
+Separating the plots out over the predator species provides the following information:
+
+### log(PPMR) v. log(predator mass) plot
+
+```{r}
 renamed_df %>% 
   mutate(lppmr= fitted(final)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot', 
+  ggplot(aes(x=lpred_weight, y=lppmr, color=pred_species)) + 
+  labs(title='log(PPMR) v. log(predator mass) plot - separated by species', 
          x='log(predator mass)', y='log(ppmr)') +
   facet_wrap(~pred_species, scale="free_y") +
-  geom_smooth()
+  geom_point(size=0.01) +
+  geom_smooth(method = "lm", se = FALSE, colour="black") +
+  theme(legend.position="none")
 ```
 
-# Citations
+### Slope and intercept values
 
-```{r citations}
-#citation()
+```{r}
+kable(coef(final)$pred_species)
+```
 
-#devtools::session_info()
+### Density of residuals
+
+```{r}
+renamed_df %>% 
+  ggplot(aes(x = resid(final), color=pred_species)) +
+  geom_density() +
+  labs(title='Density plot of the residuals - separated over species',
+              x='Residuals', y='Density') +
+  facet_wrap(~pred_species) +
+  theme(legend.position="none")
 ```
