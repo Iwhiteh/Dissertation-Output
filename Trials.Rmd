@@ -926,28 +926,28 @@ anova(one,two,three)
 
 ## Trialing different models - only for Herring {.tabset}
 
-Here, all the random effects are modeled with a randomly distributed slope and intercept.
+Here, all the random effects are modeled with a randomly distributed slope and intercept for each level of a grouping.
 
 ### Trial a
 
 ```{r trial a}
-herring_df <-  renamed_df %>% filter(pred_species == fixed("Herring"))
+mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
 
-a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = herring_df, REML=FALSE)
+a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = mackerel_df, REML=FALSE)
 
 summary(a)
 
-herring_df %>% 
+mackerel_df %>% 
   mutate(lppmr= fitted(a)) %>% 
   ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model a: Herring', 
+  labs(title='log(PPMR) v. log(predator mass) plot for model a: Mackerel', 
          x='log(predator mass)', y='log(ppmr)') +
   geom_point(size=0.001, colour="blue") 
 
-herring_df %>% 
+mackerel_df %>% 
   ggplot(aes(x = resid(a))) +
   geom_density(colour="blue") +
-  labs(title='Density plot of the residuals for model a: Herring', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for model a: Mackerel', x='Residuals', y='Density')
 
 #resid(a) gives the residuals of model a
 #The residuals are found by subtracting the fitted from the predicted values
@@ -980,21 +980,21 @@ And:
 
 ```{r trial b}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
-          data = herring_df, REML=FALSE)
+          data = mackerel_df, REML=FALSE)
 
 summary(b)
 
-herring_df %>% 
+mackerel_df %>% 
   mutate(lppmr= fitted(b)) %>% 
   ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
+  labs(title='log(PPMR) v. log(predator mass) plot for model b: Mackerel', 
          x='log(predator mass)', y='log(ppmr)') +
   geom_point(size=0.001, colour="red") 
 
-herring_df %>% 
+mackerel_df %>% 
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model b: Herring', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for model b: Mackerel', x='Residuals', y='Density')
 ```
 
 Mathematical representation
@@ -1019,21 +1019,21 @@ And:
 
 ```{r trial c}
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), data = herring_df, REML=FALSE)
+            (1+lpred_weight|ices_rectangle), data = mackerel_df, REML=FALSE)
 
 summary(c)
 
-herring_df %>% 
+mackerel_df %>% 
   mutate(lppmr= fitted(c)) %>% 
   ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model c: Herring', 
+  labs(title='log(PPMR) v. log(predator mass) plot for model c: Mackerel', 
          x='log(predator mass)', y='log(ppmr)') +
   geom_point(size=0.001, colour="green") 
 
-herring_df %>% 
+mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
   geom_density(colour="green") +
-  labs(title='Density plot of the residuals for model c: Herring', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for model c: Mackerel', x='Residuals', y='Density')
 ```
 
 Mathematical representation:
@@ -1144,15 +1144,17 @@ This model has the following variables:
 
 Variable name |  Meaning            | Value   
 ------------- | -----------         | ---------    
-$\beta_{0}$   | the intercept term  |  4.95089 
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.30651 
-$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.9026
-$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.3481
-$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 0.9498  
-$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1553 
-$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.9367
-$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1736
-$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.9024 
+$\beta_{0}$   | the intercept term  |  5.12662 
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.28973
+$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
+$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
+$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
+$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
+$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
+$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
+$\omega_{P[00]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the predator species | 0.7790
+$\omega_{P[10]}$ |  s.d. for the slope term $P_{1p}$, dependent on the predator species | 0.1699 
+$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935
 
 ## Separated by predator species plots {.tabset}
 
@@ -1189,3 +1191,46 @@ renamed_df %>%
   facet_wrap(~pred_species) +
   theme(legend.position="none")
 ```
+
+## Comparisons for Mackerel {.tabset}
+
+
+### Distribution of prey types
+```{r}
+mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
+
+ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
+   geom_bar_pattern(stat = "count",
+                    pattern_color = "white",
+                    pattern_fill = "black",
+                    aes(pattern = prey_type, pattern_angle = prey_type)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Prey type", y="Number of Observations")
+```
+
+### Density of log(prey mass) observations
+```{r}
+ggplot(mackerel_df, aes(x=lprey_weight)) +
+  geom_density(aes(weight = no._prey_per_stmch), color="lightseagreen") +
+  labs(x="log(prey mass)")
+```
+
+### fitted log(PPMR) v. log(predator mass) plot
+```{r}
+mackerel_df %>% 
+  mutate(lppmr= fitted(c)) %>% 
+  ggplot(aes(x=lpred_weight, y=lppmr)) + 
+  labs(x='log(predator mass)', y='log(ppmr)') +
+  geom_point(size=0.001, colour="lightseagreen") 
+```
+
+### Density plot of the residuals 
+```{r}
+mackerel_df %>% 
+  ggplot(aes(x = resid(c))) +
+  geom_density(colour="lightseagreen") +
+  labs(x='Residuals', y='Density')
+```
+
+
+
