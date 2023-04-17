@@ -1,5 +1,5 @@
 ---
-title: "Dissertation"
+title: "Predator-Prey Mass Ratios in Aquatic Ecosystems and Fitting Mixed Effects Models to Account For Variancen"
 author: "Imogen Whitehead"
 output:
   html_document:
@@ -833,7 +833,7 @@ Where:
 * $j$ is the predator species
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
-(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \omega^2_{A[00]})$)).
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
@@ -871,7 +871,7 @@ Where:
 * $\beta_{0}$ is the overall intercept term
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
-(where $\alpha_{1j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[10]}$ (i.e. $\alpha_{1j} \sim (0, \omega^2_{A[10]})$)).
+(where $\alpha_{1j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[10]}$ (i.e. $\alpha_{1j} \sim (0, \sigma^2_{A[10]})$)).
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
 
 For this plot, the value of log(predator mass) is modelled to be dependent on the predator species. This allows us to have lines for each predator group which all have the same intercept but differing slopes.
@@ -910,7 +910,7 @@ Where:
 * $j$ is the predator species
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
-(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \omega^2_{A[00]})$)).
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
 * $\epsilon_{ij}$ is the error term, which describes the residuals of the model
@@ -966,7 +966,7 @@ Where:
 * $h$ is the different haul_id name
 * $\beta_{0}$ is the overall intercept term
 * $H_{0h}$ is the random intercept term for haul_id $h$
-(where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{H[00]}$ (i.e. $H_{0h} \sim (0, \omega^2_{H[00]})$)).
+(where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{H[00]}$ (i.e. $H_{0h} \sim (0, \sigma^2_{H[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $H_{1h}$ is the slope term that's dependent on the random effect (the haul_id)
 * $\epsilon_{ih}$ is the error term, which describes the residuals of each point
@@ -1007,7 +1007,7 @@ Where:
 
 * $y$ is the different year the observation was taken
 * $Y_{0y}$ is the random intercept term for haul_id $h$
-(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \omega^2_{Y[00]})$)).
+(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \sigma^2_{Y[00]})$)).
 * $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
 
 And:
@@ -1046,7 +1046,7 @@ Where:
 
 * $r$ is the different ices_rectangle term
 * $R_{0r}$ is the random intercept term for the ices_rectangle $r$
-(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\omega_{R[00]}$ (i.e. $R_{0r} \sim (0, \omega^2_{R[00]})$)).
+(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{R[00]}$ (i.e. $R_{0r} \sim (0, \sigma^2_{R[00]})$)).
 * $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
 
 And:
@@ -1107,7 +1107,7 @@ Where:
 * $P_{1p}$ is the slope term that's dependent on the predator species
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
-(where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\omega_{[00]}$ (i.e. $sim (0, \omega^2_{[00]})$)).
+(where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\sigma_{[00]}$ (i.e. $sim (0, \sigma^2_{[00]})$)).
 
 And:
 
@@ -1146,14 +1146,14 @@ Variable name |  Meaning            | Value
 ------------- | -----------         | ---------    
 $\beta_{0}$   | the intercept term  |  5.12662 
 $\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.28973
-$\omega_{H[00]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
-$\omega_{H[10]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
-$\omega_{Y[00]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
-$\omega_{Y[10]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
-$\omega_{R[00]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
-$\omega_{R[10]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
-$\omega_{P[00]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the predator species | 0.7790
-$\omega_{P[10]}$ |  s.d. for the slope term $P_{1p}$, dependent on the predator species | 0.1699 
+$\sigma_{H[0h]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
+$\sigma_{H[1h]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
+$\sigma_{Y[0y]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
+$\sigma_{Y[1y]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
+$\sigma_{R[0r]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
+$\sigma_{R[1r]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
+$\sigma_{P[0p]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the predator species | 0.7790
+$\sigma_{P[1p]}$ |  s.d. for the slope term $P_{1p}$, dependent on the predator species | 0.1699 
 $\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935
 
 ## Separated by predator species plots {.tabset}
