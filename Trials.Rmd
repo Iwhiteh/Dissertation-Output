@@ -13,10 +13,10 @@ output:
 ```{r setup, message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE) 
-#message=FALSE, echo=FALSE and warning=FALSE ensure any error messages aren't shown in the output HTML file
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE) 
+#message=FALSE and warning=FALSE ensure any error or output messages aren't shown in the output HTML file
+#echo=TRUE ensures that the code used to produce outputs can be accessed through the output file
 
-#message=FALSE means no output messages are printed on the knitted HMTL file
 #loading any necessary packages
 library(dplyr)
 library(tidyverse) 
@@ -101,9 +101,9 @@ This data set is formed from recordings taken by multiple ships between the year
 Fish were taken from some location, and their individual stomach contents recorded. Predators of the same species and (roughly) the same weight/size were recorded as a single data point (the number of predators for each data set is called 'n_stomachs'). Prey of (roughly) the same size found in these stomachs were recorded in this same data point, and the total number of prey in some data point is called 'prey_count'. For each individual data point,
 
 $$
-    \text{no. prey per stomach} = \frac{\text{no. of stomachs sampled}}{\text{total no. of prey}}
+    \text{no. prey per observation} = \frac{\text{no. of stomachs sampled}}{\text{total no. of prey}}
 $$
-This is an approximation of the number of prey per stomach for some specific predator, and is called 'no._prey_per_stmch'.
+This is an approximation of the number of prey per observation for some specific predator, and is called 'no._prey_per_stmch'.
 
 Using similar logic,'prey_weight_g' is the total weight of prey in the multiple stomachs sampled to make up one datapoint. 'indiv_prey_weight' is then the weight of one single prey individual found in the stomach
 
@@ -160,12 +160,7 @@ ggplot(renamed_df, aes(x=lprey_weight)) +
   facet_wrap(~pred_species, scale="free_y")   
 ```
 
-This plot shows that different predator species consume differently sized distributions of prey. For example, some species prefer to eat a large quantity of a single size of prey, such as:
-
-* Horse Mackerel has a distinct peak at $\log(\text{prey mass}) = -6.8$ 
-* Norway Pout has one at $log(\text{prey mass}) = -6.7$
-
-And some species show a wider range of prey masses which they consume, such as:
+This plot shows that different predator species consume differently sized distributions of prey. For example, some species have a 'peak' at roughly a single size of prey (such as Horse Mackerel and Norway Pout), and some species show a wider range of prey masses which they consume, such as:
 
 * Cod
 * Sprat, and 
@@ -173,7 +168,7 @@ And some species show a wider range of prey masses which they consume, such as:
 
 # Most common prey weights
 
-```{r log(prey weight) v. number of prey per stomach}
+```{r log(prey weight) v. number of prey per observation}
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
       labs(title = "Number of prey per predator stomach v. log(prey weight) ", 
        x="log(prey weight)", y="Number of prey per predator stomach") + 
@@ -193,8 +188,8 @@ renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
 #the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
 
 ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "Number of prey per stomach v. log(prey weight) - separated by all ship names",
-       x="log(prey weight)", y="Number of prey per stomach") + 
+  labs(title = "Number of prey per observation v. log(prey weight) - separated by all ship names",
+       x="log(prey weight)", y="Number of prey per observation") + 
   geom_point(size=0.02, colour="red") +
   theme(strip.text = element_text(size = 5)) + 
   facet_wrap(~renamed_df$haul_id_short, scale="free_y") 
@@ -213,9 +208,9 @@ haul_list_interesting <- unique(interesting_haul$haul_id_short)
 #creates an array containing every individual (renamed) ship name that we are interested in
 
 ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "Number of prey per stomach v. log(prey weight) 
+  labs(title = "Number of prey per observation v. log(prey weight) 
        - separated by ship names, for a selection of 6 ships",
-       x="log(prey weight)", y="Number of prey per stomach") + 
+       x="log(prey weight)", y="Number of prey per observation") + 
   geom_point(size=0.02, colour="red") +
   theme(strip.text = element_text(size = 10)) + 
   facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
@@ -227,7 +222,7 @@ These six graphs show a range of unusual looking points:
 
 1. $y \propto e^{-x}$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
 2. lots of observations for single prey weights for LUC and CLYDE (554)
-3. lots of the same no. of prey per stomach observations for HIDDINK.(27180)
+3. lots of the same no. of prey per observation observations for HIDDINK.(27180)
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
 
 There are a number of other ships which also provided potentially erroneous data, and the number of datapoints affected are as below:
@@ -243,7 +238,7 @@ type3 <- length((filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUC
 type4 <- length((filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error'))$haul_id_short)
 
 ship_erroneous <- data.frame("Graph_Type"=c("y proportional to exp(-x)", "Single prey weight"
-                                      , "Same number of prey per stomach", "Same data"),
+                                      , "Same number of prey per observation", "Same data"),
                         "Number_of_observations"=c(type1, type2, type3, type4))
 #creates a data frame which shows the number of observations of each error 'type'
 
@@ -403,7 +398,7 @@ ggplot(data = renamed_df, aes(x=lppmr)) +
 
 ## Weighted by number of prey
 
-These plots are weighted by the number pf prey per stomach. This means that data points with a larger number of prey per stomach are prioritised/weighted more than those with a smaller number of prey per stomach.
+These plots are weighted by the number pf prey per observation. This means that data points with a larger number of prey per observation are prioritised/weighted more than those with a smaller number of prey per observation.
 
 ```{r ave PPMR prey no.}
 ggplot(data = renamed_df, aes(x=lppmr)) + 
@@ -413,7 +408,7 @@ ggplot(data = renamed_df, aes(x=lppmr)) +
   theme(strip.text = element_text(size = 5)) +
   geom_density(aes(weight = no._prey_per_stmch), colour="green")
 
-#weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per stomach
+#weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per observation
 ```
 
 By looking at the two differently weighted graphs, it is clear to see that the plots are 'shifted' by some amount (e.g. the Blue Whiting when weighted by prey biomass has a mean log(ppmr) of roughly 4.8, and when weighted by number of prey this mean becomes roughly 7.5).
@@ -465,7 +460,7 @@ cat("Mean value of log(ppmr), weighted by biomass of prey:", bio_herringmean,
 
 ## Weighted by number of prey
 
-The curve with points weighted by the number of prey per stomach is plotted in red, and a normal curve (also weighted by the number of prey per stomach) is plotted over the top as a dotted black line.
+The curve with points weighted by the number of prey per observation is plotted in red, and a normal curve (also weighted by the number of prey per observation) is plotted over the top as a dotted black line.
 
 ```{r No of prey weighting} 
 no_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$no._prey_per_stmch, na.rm = TRUE)
@@ -474,7 +469,7 @@ no_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$no._prey_per_stmch, n
 
 ggplot(data = herringDF, aes(x=lppmr), group=1) + 
           labs(title = "Density plot of log(ppmr) for Herring, 
-               weighted by number of prey per stomach",
+               weighted by number of prey per observation",
                x="log(PPMR)", y="Number density of observations") +
           geom_density(aes(weight = no._prey_per_stmch), colour="green") + 
           theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
@@ -485,7 +480,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
 
 #the xlim is different to the graph above because these data points lie over a slightly different log(ppmr) range
 
-cat("Mean value of log(ppmr), weighted by the number of prey per stomach:", no_herringmean,
+cat("Mean value of log(ppmr), weighted by the number of prey per observation:", no_herringmean,
     "\n",
     "Standard deviation of this:", no_herringSD)
 ```
@@ -500,12 +495,12 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
                color="Line", linetype="Line") +
           geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass",
                            linetype="prey biomass")) + 
-          geom_density(aes(weight = prey_weight_g, colour="number of prey per stomach",
-                           linetype="number of prey per stomach")) + 
+          geom_density(aes(weight = prey_weight_g, colour="number of prey per observation",
+                           linetype="number of prey per observation")) + 
           stat_function(fun = dnorm, 
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)),
-                        aes(colour="number of prey per stomach - normal curve",
-                            linetype="number of prey per stomach - normal curve")) +
+                        aes(colour="number of prey per observation - normal curve",
+                            linetype="number of prey per observation - normal curve")) +
           stat_function(fun = dnorm,
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)),
                         aes(colour="prey biomass - normal curve",
@@ -547,7 +542,7 @@ RECALCULATE
 
 There is a difference in expected and actual prey biomass weighted mean of 0.30511806191. This is a fairly insignificant value, which suggests the shifting mean equations are relatively accurate for this data set with these weightings.
 
-Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per stomach and prey biomass.
+Therefore, we can continue with the assumption that there is a difference in the mean of log(ppmr) of the square of the standard deviation when we weight by number of prey per observation and prey biomass.
 
 # Predator mass against ppmr
 
@@ -640,7 +635,7 @@ ggplot(data=PoorCod_df, aes(lpred_weight, lppmr)) +
 # fun.data=mean_se calculates the mean and standard error for each point
 # linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
-#weighted by number of prey per stomach
+#weighted by number of prey per observation
 perstmch_weighting <- 
   coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight, weight=PoorCod_df$no._prey_per_stmch))
 
@@ -662,7 +657,7 @@ cat("slope of the log(ppmr) v. log(predator mass) line of best fit for Poor Cod:
 
 Looking at just the predator species 'Poor Cod'. There are three LOBF (line of best fit), weighted by different variables:
 
-1. green and dotted: by number of prey per stomach
+1. green and dotted: by number of prey per observation
 2. red and dashed: by prey biomass
 3. blue: no weighting in the LOBF
 
@@ -787,7 +782,7 @@ Where:
 ```{r linear model}
 renamed_df %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    geom_line(size=1) + 
+    geom_point(size=0.1) + 
     labs( x='log(predator mass)', y='log(ppmr)') +
     theme_classic()
 #theme_classic() removes the grey background of the plot to make it easier to read
@@ -1039,14 +1034,20 @@ And:
 ### Comparing
 
 ```{r comparisons}
-ggplot(data=herring_df) +
+ggplot(data=mackerel_df) +
   labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density', 
        color="Model", linetype="Model") +
-  geom_density(aes(x=resid(a), colour="a", linetype="a")) +
-  geom_density(aes(x=resid(b), colour="b", linetype="b")) +
-  geom_density(aes(x=resid(c), colour="c", linetype="c")) +
+  geom_density(aes(x=resid(a), colour="with ship name", linetype="with ship name")) +
+  geom_density(aes(x=resid(b), colour="with ship name and year", 
+                  linetype="with ship name and year")) +
+  geom_density(aes(x=resid(c), colour="with ship name, year and location", 
+                   linetype="with ship name, year and location")) +
   scale_color_manual(values=c("blue", "red", "green")) +
-  scale_linetype_manual(values = c("dashed", "solid", "dotdash"))
+  scale_linetype_manual(values = c("dashed", "dotted", "dotdash")) +
+  theme_classic()
+
+anova(a,b,c)
+#comparing the three models
 ```
 
 Variance of the groups decreases as other random effects are added to the models.
@@ -1089,8 +1090,9 @@ And:
 * Random effects: ship name, year, ices_rectangle, predator species
 
 ```{r final model}
- final <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle) + (1+lpred_weight|pred_species), 
+ final <- lmer(lppmr ~ lpred_weight + pred_species + 
+            (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), 
             data = renamed_df, REML=FALSE)
 
 summary(final)
@@ -1189,7 +1191,7 @@ ggplot(mackerel_df, aes(x=lprey_weight)) +
   labs(x="log(prey mass)")
 ```
 
-### fitted log(PPMR) v. log(predator mass) plot
+### Fitted log(PPMR) v. log(predator mass) plot
 ```{r}
 mackerel_df %>% 
   mutate(lppmr= fitted(c)) %>% 
