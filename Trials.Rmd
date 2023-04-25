@@ -1,5 +1,5 @@
 ---
-title: "Predator-Prey Mass Ratios in Aquatic Ecosystems and Fitting Mixed Effects Models to Account For Variancen"
+title: "Predator-Prey Mass Ratios in Aquatic Ecosystems and Fitting Mixed Effects Models to Account For Variance"
 author: "Imogen Whitehead"
 output:
   html_document:
@@ -124,10 +124,10 @@ $$
 ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
    geom_bar_pattern(stat = "count",
                     pattern_color = "white",
-                    pattern_fill = "black",
+                    pattern_fill = "white",
                     aes(pattern = prey_type, pattern_angle = prey_type)) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
   labs(title = "Distribution of prey types for each predator species", x="Prey type",
        y="Number of Observations")
  
@@ -136,6 +136,7 @@ ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
 #facet_wrap() means an individual bar chart is created for each individual predator species
 #'theme()' adjusts the labels along the x-axis so they lie slightly angled to the vertical direction so they are easy to read
 #scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between, and renames the title of the key to show which colour means what
+#legend.position="none" means that there is no key to explain what each bar shows, as the x-axis is very clear in describing each bar
 ```
 
 These are individual bar charts showing the distribution of the type of prey each predator eats.
@@ -779,7 +780,7 @@ $$
 
 Where:
 
-* $i$ is the individual observation
+* $i$ is the index of the individual observation
 * $\beta_{0}$ is the overall intercept term (defined at the point where $\log(\text{predator mass}) = 0$.)
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 
@@ -792,7 +793,7 @@ renamed_df %>%
 #theme_classic() removes the grey background of the plot to make it easier to read
 ```
 
-This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, we will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
+This plot is very difficult to interpret, and the relationship between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, We will add random effects to account for some of the variance in the $\log(\text{ppmr})$ values.
 
 
 ### First trial
@@ -829,8 +830,8 @@ $$
 
 Where:
 
-* $i$ is the individual observation
-* $j$ is the predator species
+* $i$ is the index of the individual observation
+* $j$ is the index of the predator species
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
 (where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
@@ -866,8 +867,8 @@ $$
 
 Where:
 
-* $i$ is the individual observation
-* $j$ is the predator species
+* $i$ is the index of the individual observation
+* $j$ is the index of the predator species
 * $\beta_{0}$ is the overall intercept term
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
@@ -906,8 +907,8 @@ $$
 
 Where:
 
-* $i$ is the individual observation
-* $j$ is the predator species
+* $i$ is the index of the individual observation
+* $j$ is the index of the predator species
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
 (where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
@@ -924,11 +925,13 @@ anova(one,two,three)
 #comparing the three models
 ```
 
+We can see that the third trial has a significantly smaller BIC value, and hence we will choose to continue using models which have slopes and intercepts that vary according to the fixed effect.
+
 ## Trialing different models - only for Herring {.tabset}
 
 Here, all the random effects are modeled with a randomly distributed slope and intercept for each level of a grouping.
 
-### Trial a
+### With ship name
 
 ```{r trial a}
 mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
@@ -936,13 +939,6 @@ mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
 a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = mackerel_df, REML=FALSE)
 
 summary(a)
-
-mackerel_df %>% 
-  mutate(lppmr= fitted(a)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model a: Mackerel', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="blue") 
 
 mackerel_df %>% 
   ggplot(aes(x = resid(a))) +
@@ -962,8 +958,8 @@ $$
 
 Where:
 
-* $i$ is the individual observation
-* $h$ is the different haul_id name
+* $i$ is the index of the individual observation
+* $h$ is the index of the different haul_id name
 * $\beta_{0}$ is the overall intercept term
 * $H_{0h}$ is the random intercept term for haul_id $h$
 (where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{H[00]}$ (i.e. $H_{0h} \sim (0, \sigma^2_{H[00]})$)).
@@ -976,20 +972,13 @@ And:
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name
 
-### Trial b
+### With year
 
 ```{r trial b}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
           data = mackerel_df, REML=FALSE)
 
 summary(b)
-
-mackerel_df %>% 
-  mutate(lppmr= fitted(b)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model b: Mackerel', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="red") 
 
 mackerel_df %>% 
   ggplot(aes(x = resid(b))) +
@@ -1005,7 +994,7 @@ $$
 
 Where:
 
-* $y$ is the different year the observation was taken
+* $y$ is the index of the different year the observation was taken
 * $Y_{0y}$ is the random intercept term for haul_id $h$
 (where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \sigma^2_{Y[00]})$)).
 * $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
@@ -1015,20 +1004,13 @@ And:
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name, year
 
-### Trial c
+### With location
 
 ```{r trial c}
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
             (1+lpred_weight|ices_rectangle), data = mackerel_df, REML=FALSE)
 
 summary(c)
-
-mackerel_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot for model c: Mackerel', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="green") 
 
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
@@ -1044,7 +1026,7 @@ $$
 
 Where:
 
-* $r$ is the different ices_rectangle term
+* $r$ is the index of the different ices_rectangle term
 * $R_{0r}$ is the random intercept term for the ices_rectangle $r$
 (where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{R[00]}$ (i.e. $R_{0r} \sim (0, \sigma^2_{R[00]})$)).
 * $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
@@ -1057,14 +1039,6 @@ And:
 ### Comparing
 
 ```{r comparisons}
-ggplot(aes(x=lpred_weight), data=herring_df) +
-  labs(title='log(PPMR) v. log(predator mass) plot for model b: Herring', 
-         x='log(predator mass)', y='log(ppmr)', color="Model") +
-  geom_point(aes(y=fitted(a), colour="a"), size=0.5) +
-  geom_point(aes(y=fitted(b), colour="b"), size=0.5) +
-  geom_point(aes(y=fitted(c), colour="c"), size=0.5) +
-  scale_color_manual(values=c("blue", "red", "green"))
-
 ggplot(data=herring_df) +
   labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density', 
        color="Model", linetype="Model") +
