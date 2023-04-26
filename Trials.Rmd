@@ -321,7 +321,9 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
   geom_point(size=0.01, colour="red") + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
-  stat_smooth (method='lm', se=FALSE, colour="black")
+  geom_smooth(method='lm', colour="black")
+
+#the grey bands around the lines of best fit represent the standard error of this line
 ```
 
 ## Gradients of the plots for each predator species
@@ -329,49 +331,50 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
 ```{r pvp gradients}
 i <- 1
 species_grad = c()
+uncert=c()
 #setting i=1 for the while loop
 #and creating an empty vector called 'species_grad' to hold data
 
 while(i<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
+  
   grad <- coef(lm((species_df$lprey_weight)~(species_df$lpred_weight)))
   species_grad[i] <- grad[2]
+  
+  preyvpred.lm <- lm(lprey_weight ~ lpred_weight, data = species_df)
+  uncert[i] <- summary(preyvpred.lm)$coefficients[4]
+  
   i=i+1
 }
 
 #'while' means that this function repeats through the length of 'species_list' until all predator species are accounted for
 #i=i+1 increases the value of i each time through this loop to motivate this repeat
 #this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
+#this also creates a linear model of log(prey weight) against log(predator weight) for each individual predator species, and extracts the standard error of the line of best fit for this linear model, storing this in an array called 'uncert'
 
 pvp_grads <- data.frame("Predator_Species"=c(species_list),
-                        Gradient=c(species_grad))
+                        Gradient=c(species_grad),
+                        Error=c(uncert))
 
 kable(pvp_grads)
 #creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
 #each row contains the name of some individual predator species and its associated gradient
 #kable prints the information in the pvp_grads
+
+i=0
+while(i<=length(species_list)){
+  paste(print(species_list[i]))
+  paste(print(species_grad[i] - uncert[i]))
+  paste(print(species_grad[i] + uncert[i]))
+  i=i+1
+}
 ```
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
 
 We are wanting gradient $\neq 0$ to suggest dependence between the predator and prey mass, and specifically gradient $= 1$ to suggest that they are linearly proportional.
 
-The gradient $\neq 0 \pm 0.5$ for the predator species:
-
- * Cod
- * Common Dab
- * European Hake
- * Haddock
- * Horse Mackerel
- * Megrim
- * Monkfish
- * Norway Pout
- * Plaice
- * Poor Cod
- * Sprat
- * Whiting
- 
-This represents 13 out of the 16 possible predator species, hence the assumption that the predator and prey masses are dependent on each other is a reasonable one. Interestingly, these gradients are all also equal to $1 \pm 0.5$, which suggests that there is a linear proportionality between these variables.
+The gradient $\neq 0 \pm$ their standard error for all of the predator species. Therefore, the assumption that the predator and prey masses are dependent on each other is a reasonable one and it holds for every predator species.
 
 Having proportionality between the predator and prey masses allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
 
@@ -553,7 +556,7 @@ ggplot(data=renamed_df, aes(lpred_weight, lppmr)) +
   geom_point(size=0.001, colour="cornflowerblue") +
   labs(title = "log(PPMR) v. log(predator mass) plot", 
        x="log(Predator mass)", y="log(PPMR)") + 
-  stat_smooth (method='lm', se=FALSE, colour="black") + 
+  stat_smooth (method='lm', colour="black") + 
   facet_wrap(~pred_species, scale="free_y")
 ```
 
@@ -579,36 +582,28 @@ We want them to not be proportional (i.e. slope,  m= 0) to prove that log(predat
 ```{r ppmrvp gradients}
 j <- 1
 species_grad_ppmr = c()
+uncert_ppmr = c()
 
 while(j<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[j]))
+  
   grad <- coef(lm((species_df$lppmr)~(species_df$lpred_weight)))
   species_grad_ppmr[j] <- grad[2]
+  
+  ppmrvpred.lm <- lm(lppmr ~ lpred_weight, data = species_df)
+  uncert_ppmr[j] <- summary(ppmrvpred.lm)$coefficients[4]
+  
   j=j+1
 }
 
 ppmrvp_grads <- data.frame("Predator_species"=c(species_list),
-                        gradient=c(species_grad_ppmr))
+                        Gradient=c(species_grad_ppmr),
+                        Error = c(uncert_ppmr))
 
 kable(ppmrvp_grads)
 ```
 
-For the assumption to be upheld, we need gradient $= 0$. This is (approximately, by $\pm 0.5$) satisfied for the species:
-
- * Cod
- * Common Dab
- * European Hake
- * Haddock
- * Horse Mackerel
- * Megrim 
- * Monkfish
- * Norway Pout
- * Plaice
- * Poor Cod
- * Sprat
- * Whiting
- 
-This means that the gradient of 12 out of the possible 16 species is equal to $0 \pm 0.5$. However, this amount of error is fairly large, so we have not supported the idea that the assumption of independence between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ can be upheld for this data set.
+$\pm$ their standard error, the species Megrim, Norway Pout, Poor Cod have a gradient equal to $0$ (to 1 significant figure). This is not many of the possible species,, so we have not supported the idea that the assumption of independence between the $\log(\text{ppmr})$ and $\log(\text{predator mass})$ can be upheld for this data set.
 
 ## Different weightings of the line of best fit
 
@@ -922,7 +917,7 @@ anova(one,two,three)
 
 We can see that the third trial has a significantly smaller BIC value, and hence we will choose to continue using models which have slopes and intercepts that vary according to the fixed effect.
 
-## Trialing different models - only for Herring {.tabset}
+## Trialing different models - only for Mackerel {.tabset}
 
 Here, all the random effects are modeled with a randomly distributed slope and intercept for each level of a grouping.
 
@@ -1035,7 +1030,7 @@ And:
 
 ```{r comparisons}
 ggplot(data=mackerel_df) +
-  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density', 
+  labs(title='Density plot of the residuals: Mackerel', x='Residuals', y='Density', 
        color="Model", linetype="Model") +
   geom_density(aes(x=resid(a), colour="with ship name", linetype="with ship name")) +
   geom_density(aes(x=resid(b), colour="with ship name and year", 
@@ -1050,44 +1045,55 @@ anova(a,b,c)
 #comparing the three models
 ```
 
-Variance of the groups decreases as other random effects are added to the models.
-But, the error term (standard error) roughly increases as more random effects are added to the model.
+The BIC value is the smallest when all three random effects are considered, and the residuals for this three-random-effect model look the most similar to a normal distribution. Therefore, we will choose to use a model which uses all three random effects for further analysis. 
 
 ## Mixed effects model - over all species
 
-Model c appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
+The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
 
 Mathematical representation:
 $$
-  \log(\text{ppmr})_{ihyrp} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} + P_{or}) +
-        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r} + P_{1r}) \log(\text{predator mass})_i +
-        \epsilon_{ihyrp}
+  \log(\text{ppmr})_{ihyrp} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r}) +
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_i + \\
+        \sum_{p=1}^{16} \alpha_p (\text{predator species})_p +
+        \epsilon_{ihyr}
 $$
 Where:
 
-* $i$ is the individual observation
-* $h$ is the different ship name
-* $y$ is the the year each observation is taken
-* $r$ is the different ices_rectangle term
-* $p$ is the predator species
+* $i$ is the index of the individual observation
+* $h$ is the index of the different ship name
+* $y$ is the index of the the year each observation is taken
+* $r$ is the index of the different ices_rectangle term
+* $p$ is the index of the predator species the observation belongs to
 * $\beta_{0}$ is the overall intercept term
 * $H_{0h}$ is the random intercept term for haul_id, $h$
 * $Y_{0y}$ is the random intercept term for year, $y$
 * $R_{0r}$ is the random intercept term for ices_rectangle, $r$
-* $P_{0p}$ is the random intercept term for the predator species, $p$
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $H_{1h}$ is the slope term that's dependent on the haul_id
 * $Y_{1y}$ is the slope term that's dependent on the year
 * $R_{1r}$ is the slope term that's dependent on the ices_rectangle
-* $P_{1p}$ is the slope term that's dependent on the predator species
+* $\alpha_p$ is the slope term which is dependent on the predator species (and each predator species $p$ has a unique slope term)
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
 (where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\sigma_{[00]}$ (i.e. $sim (0, \sigma^2_{[00]})$)).
 
-And:
+and,
 
-* Fixed effects: $\log$(predator mass)
-* Random effects: ship name, year, ices_rectangle, predator species
+$$
+\begin{equation}
+    \text{year}_y = 
+    \begin{cases}
+        1, &\text{ if } y==i \\
+        0, &\text{ otherwise}
+    \end{cases}
+\end{equation}
+$$
+
+So, 
+
+* Fixed effects: $\log$(predator mass), predator species
+* Random effects: ship name, year, ices_rectangle
 
 ```{r final model}
  final <- lmer(lppmr ~ lpred_weight + pred_species + 
