@@ -335,6 +335,8 @@ uncert=c()
 #setting i=1 for the while loop
 #and creating an empty vector called 'species_grad' to hold data
 
+summary(preyvpred.lm)
+
 while(i<=length(species_list)){
   species_df <- renamed_df %>% filter(pred_species == fixed(species_list[i]))
   
@@ -360,14 +362,6 @@ kable(pvp_grads)
 #creates a new data frame name 'pvp_grads', with one column named 'pred_species' and the other named 'gradient'
 #each row contains the name of some individual predator species and its associated gradient
 #kable prints the information in the pvp_grads
-
-i=0
-while(i<=length(species_list)){
-  paste(print(species_list[i]))
-  paste(print(species_grad[i] - uncert[i]))
-  paste(print(species_grad[i] + uncert[i]))
-  i=i+1
-}
 ```
 
 Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
@@ -731,7 +725,9 @@ A qqplot (quantile-quantile plot) shows if two data sets come from the same dist
 ```{r density of residuals, message=FALSE}
 ggplot(herring_model, aes(x = .resid)) +
   geom_density(colour="red") +
-  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density') +
+  theme_classic()
+
 #plots the density of the residuals of the lppmr v lpred_weight graph for Herring
 ```
 
@@ -790,22 +786,13 @@ This plot is very difficult to interpret, and the relationship between the $\log
 
 Fixed effects: $\log$(predator mass)
 
-Random effects: predator species (fixed slopes and random intercepts)
+Random effects: year (fixed slopes and random intercepts)
 
 ```{r first}
-one <- lmer(lppmr ~ lpred_weight + (1|pred_species), data = renamed_df, REML=FALSE)
+one <- lmer(lppmr ~ lpred_weight + (1|year), data = renamed_df, REML=FALSE)
 #same slope for every predator species, but varying intercept
 
-renamed_df %>% 
-    mutate(lppmr= fitted(one)) %>% 
-    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    theme_classic() +
-    labs(x='log(predator mass)', y='log(ppmr)') +
-    geom_line(size=1)
-
-#fitted() gives the fitted values, which are the predicted values of the outcome variable (lppmr) for the model, found using the random distributions of the random variables for the slope and intercept
-
-kable(coef(one)$pred_species)
+kable(coef(one)$year)
 #This outputs the intercept and slope terms for each predator species for the fitted model
 ```
 
@@ -814,79 +801,65 @@ Here, there is the same slope for every predator species, but each species group
 This is mathematically represented by:
 
 $$
-  \log(\text{ppmr})_{ij} = (\beta_{0} + \alpha_{0j}) + 
-        \beta_{1} \log(\text{predator mass})_{i} + \epsilon_{ij}
+  \log(\text{ppmr})_{iy} = (\beta_{0} + \alpha_{0y}) + 
+        \beta_{1} \log(\text{predator mass})_{i} + \epsilon_{iy}
 $$
 
 Where:
 
 * $i$ is the index of the individual observation
-* $j$ is the index of the predator species
+* $y$ is the index of the year
 * $\beta_{0}$ is the overall intercept term
-* $\alpha_{0j}$ is the random intercept term for predator species $j$
-(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
+* $\alpha_{0y}$ is the random intercept term for year $y$
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0y} \sim (0, \sigma^2_{A[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
-* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
+* $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
 ### Second trial
 
 Fixed effects: $\log$(predator mass)
 
-Random effects: predator species (random slope and fixed intercept)
+Random effects: year (random slope and fixed intercept)
 
 ```{r second}
-two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|pred_species), data = renamed_df, REML=FALSE)
+two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|year), data = renamed_df, REML=FALSE)
 #(0+ | ) means that the slope of the graph is different for each predator species, but they each group has the same intercept
 
-renamed_df %>% 
-    mutate(lppmr = fitted(two)) %>% 
-    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    theme_classic() +
-    labs( x='log(predator mass)', y='log(ppmr)') +
-    geom_line(size=1) 
-
-kable(coef(two)$pred_species)
+kable(coef(two)$year)
 ```
 
 This is mathematically represented by:
 
 $$
   \log(\text{ppmr})_{ij} = \beta_{0} + 
-        (\beta_{1} + \alpha_{1j}) \log(\text{predator mass})_{i} + \epsilon_{ij}
+        (\beta_{1} + \alpha_{1y}) \log(\text{predator mass})_{i} + \epsilon_{iy}
 $$
 
 Where:
 
 * $i$ is the index of the individual observation
-* $j$ is the index of the predator species
+* $y$ is the index of the year
 * $\beta_{0}$ is the overall intercept term
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
-* $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
-(where $\alpha_{1j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[10]}$ (i.e. $\alpha_{1j} \sim (0, \sigma^2_{A[10]})$)).
-* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
+* $\alpha_{1y}$ is the slope term that's dependent on the random effect (the year)
+(where $\alpha_{1y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[10]}$ (i.e. $\alpha_{1y} \sim (0, \sigma^2_{A[10]})$)).
+* $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
-For this plot, the value of log(predator mass) is modelled to be dependent on the predator species. This allows us to have lines for each predator group which all have the same intercept but differing slopes.
+For this plot, the value of log(predator mass) is modelled to be dependent on the year that each observation is taken. This allows us to have lines for each unique year which all have the same intercept but differing slopes.
 
 ### Third trial
 
 Fixed effects: $\log$(predator mass)
 
-Random effects: predator species (random slope and random intercept)
+Random effects: year (random slope and random intercept)
 
 ```{r third}
-three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|pred_species), data = renamed_df, REML=FALSE)
+three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (correlated)
 
 summary(three)
 
-renamed_df %>% 
-    mutate(lppmr = fitted(three)) %>% 
-    ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-    theme_classic() +
-    labs(x='log(predator mass)', y='log(ppmr)') +
-    geom_line(size=1) 
-
-kable(coef(three)$pred_species)
+kable(coef(three)$year)
 ```
 
 This is mathematically represented by:
@@ -898,15 +871,15 @@ $$
 Where:
 
 * $i$ is the index of the individual observation
-* $j$ is the index of the predator species
+* $y$ is the index of the year
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
-(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0j} \sim (0, \sigma^2_{A[00]})$)).
+(where $\alpha_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0y} \sim (0, \sigma^2_{A[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
-* $\alpha_{1j}$ is the slope term that's dependent on the random effect (the predator species)
-* $\epsilon_{ij}$ is the error term, which describes the residuals of the model
+* $\alpha_{1y}$ is the slope term that's dependent on the random effect (the year)
+* $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
-From the table, we can see this model features slopes and intercepts that are different for each predator group are different.
+From the table, we can see this model features slopes and intercepts that are different for each year are different.
 
 ### Comparing the models
 
@@ -930,6 +903,10 @@ a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = mackerel
 
 summary(a)
 
+qqnorm(resid(a))
+qqline(resid(a))
+#look for lying along the line
+
 mackerel_df %>% 
   ggplot(aes(x = resid(a))) +
   geom_density(colour="blue") +
@@ -943,7 +920,7 @@ This is mathematically represented by:
 
 $$  
 \log(\text{ppmr})_{ih} = (\beta_{0} + H_{0h}) + 
-        (\beta_{1} + H_{1h}) \log(\text{predator mass})_{1i} + \epsilon_{ih}
+        (\beta_{1} + H_{1h}) \log(\text{predator mass})_{i} + \epsilon_{ih}
 $$
 
 Where:
@@ -970,6 +947,10 @@ b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
 
 summary(b)
 
+qqnorm(resid(b))
+qqline(resid(b))
+#look for lying along the line
+
 mackerel_df %>% 
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
@@ -979,7 +960,7 @@ mackerel_df %>%
 Mathematical representation
 $$  
   \log(\text{ppmr})_{ihy} = (\beta_{0} + H_{0h} + Y_{0y}) +
-        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
+        (\beta_{1} + H_{1h} + Y_{1y}) \log(\text{predator mass})_{i} + \epsilon_{ihyr}
 $$
 
 Where:
@@ -994,6 +975,8 @@ And:
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name, year
 
+
+
 ### With location
 
 ```{r trial c}
@@ -1001,6 +984,10 @@ c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
             (1+lpred_weight|ices_rectangle), data = mackerel_df, REML=FALSE)
 
 summary(c)
+
+qqnorm(resid(c))
+qqline(resid(c))
+#look for lying along the line
 
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
@@ -1011,7 +998,7 @@ mackerel_df %>%
 Mathematical representation:
 $$  
   \log(\text{ppmr})_{ihyr} = (\beta_{0} + H_{0h} + Y_{0y} + R_{0r} )+
-        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_{1i} + \epsilon_{ihyr}
+        (\beta_{1} + H_{1h} + Y_{1y} + R_{1r}) \log(\text{predator mass})_{i} + \epsilon_{ihyr}
 $$
 
 Where:
@@ -1076,18 +1063,22 @@ Where:
 * $\alpha_p$ is the slope term which is dependent on the predator species (and each predator species $p$ has a unique slope term)
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
-(where each random intercept term is normally distributed with a mean of $0$ and a standard deviation $\sigma_{[00]}$ (i.e. $sim (0, \sigma^2_{[00]})$)).
+(where each random intercept term and the residuals are normally distributed with a mean of $0$ and a standard deviation $\sigma_{[00]}$ (i.e. $sim (0, \sigma^2_{[00]})$)).
 
 and,
 
 $$
-\begin{equation}
-    \text{year}_y = 
+    \text{species} = \{\text{Blue Whiting}, \text{ Cod}, \text{ Common Dab}, \text{ European Hake}, \ldots, \text{ Whiting}\}
+$$
+
+is an array containing all possible predator species types, so:
+
+$$
+    \text{pred}_p = 
     \begin{cases}
-        1, &\text{ if } y==i \\
-        0, &\text{ otherwise}
+        1, \text{if the species that observation i belongs to is } \text{species}[p] \\
+        0, \text{ otherwise}
     \end{cases}
-\end{equation}
 $$
 
 So, 
@@ -1103,13 +1094,9 @@ So,
 
 summary(final)
 
-renamed_df %>% 
-  mutate(lppmr= fitted(final)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot', 
-         x='log(predator mass)', y='log(ppmr)') +
-  geom_line() +
-  theme_classic()  
+qqnorm(resid(final))
+qqline(resid(final))
+#look for lying along the line
 
 renamed_df %>% 
   ggplot(aes(x = resid(final))) +
@@ -1126,40 +1113,31 @@ This model has the following variables:
 
 Variable name |  Meaning            | Value   
 ------------- | -----------         | ---------    
-$\beta_{0}$   | the intercept term  |  5.12662 
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.28973
-$\sigma_{H[0h]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6711
-$\sigma_{H[1h]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2007
+$\beta_{0}$   | the intercept term  |  5.0363484
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.2737651
+$\sigma_{H[0h]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6247
+$\sigma_{H[1h]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2509
 $\sigma_{Y[0y]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
-$\sigma_{Y[1y]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year| 0.1261
-$\sigma_{R[0r]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8649
-$\sigma_{R[1r]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1498
-$\sigma_{P[0p]}$ |  s.d. for the intercept term $P_{0p}$, dependent on the predator species | 0.7790
-$\sigma_{P[1p]}$ |  s.d. for the slope term $P_{1p}$, dependent on the predator species | 0.1699 
-$\epsilon_{ihyr}$ | the s.d. of the residual/error term | 1.8935
+$\sigma_{Y[1y]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year|  0.1194
+$\sigma_{R[0r]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8934
+$\sigma_{R[1r]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1545
+$\sigma_{\epsilon[ihyr]}$ | the s.d. of the residual/error term | 1.8944
 
-## Separated by predator species plots {.tabset}
+## Separated by predator species {.tabset}
 
 Separating the plots out over the predator species provides the following information:
 
-### log(PPMR) v. log(predator mass) plot
+### Slope values
 
 ```{r}
-renamed_df %>% 
-  mutate(lppmr= fitted(final)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr, color=pred_species)) + 
-  labs(title='log(PPMR) v. log(predator mass) plot - separated by species', 
-         x='log(predator mass)', y='log(ppmr)') +
-  facet_wrap(~pred_species, scale="free_y") +
-  geom_point(size=0.01) +
-  geom_smooth(method = "lm", se = FALSE, colour="black") +
-  theme(legend.position="none")
-```
+new <- coef(summary(final))[3:17]
 
-### Slope and intercept values
+pred_lmer <- data.frame(Species=c(species_list[2:16]),
+                        "Gradient"=c(new))
 
-```{r}
-kable(coef(final)$pred_species)
+kable(pred_lmer)
+
+#BLUE WHITING??
 ```
 
 ### Density of residuals
@@ -1176,7 +1154,6 @@ renamed_df %>%
 
 ## Comparisons for Mackerel {.tabset}
 
-
 ### Distribution of prey types
 ```{r}
 mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
@@ -1186,24 +1163,15 @@ ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
                     pattern_color = "white",
                     pattern_fill = "black",
                     aes(pattern = prey_type, pattern_angle = prey_type)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
   labs(x="Prey type", y="Number of Observations")
 ```
 
-### Density of log(prey mass) observations
+### Density of lppmr observations
 ```{r}
-ggplot(mackerel_df, aes(x=lprey_weight)) +
+ggplot(mackerel_df, aes(x=lppmr)) +
   geom_density(aes(weight = no._prey_per_stmch), color="lightseagreen") +
-  labs(x="log(prey mass)")
-```
-
-### Fitted log(PPMR) v. log(predator mass) plot
-```{r}
-mackerel_df %>% 
-  mutate(lppmr= fitted(c)) %>% 
-  ggplot(aes(x=lpred_weight, y=lppmr)) + 
-  labs(x='log(predator mass)', y='log(ppmr)') +
-  geom_point(size=0.001, colour="lightseagreen") 
+  labs(x="log(PPMR)", y="Number density of observations")
 ```
 
 ### Density plot of the residuals 
@@ -1211,7 +1179,8 @@ mackerel_df %>%
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
   geom_density(colour="lightseagreen") +
-  labs(x='Residuals', y='Density')
+  labs(x='Residuals', y='Density') +
+  theme_classic()
 ```
 
 
