@@ -98,25 +98,25 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
 This data set is formed from recordings taken by multiple ships between the years 1886-2016.
 
-Fish were taken from some location, and their individual stomach contents recorded. Predators of the same species and (roughly) the same weight/size were recorded as a single data point (the number of predators for each data set is called 'n_stomachs'). Prey of (roughly) the same size found in these stomachs were recorded in this same data point, and the total number of prey in some data point is called 'prey_count'. For each individual data point,
+Fish were taken from some location, and their individual stomach contents recorded. Prey of (roughly) the same size found in a single predator's stomach were recorded as part of a single observation. This gives the number of prey that make up a single observation for some single predator stomach, and is called 'no._prey_per_stmch'.
+
+Using similar logic,'prey_weight_g' is the total weight of prey in a single observation, and 'indiv_prey_weight' is then the approximate weight of one single prey individual found in the stomach, found using:
 
 $$
-    \text{no. prey per observation} = \frac{\text{no. of stomachs sampled}}{\text{total no. of prey}}
+  \text{indiv_prey_weight} = \frac{\text{prey_weight_g}}{\text{no._prey_per_stmch}}
 $$
-This is an approximation of the number of prey per observation for some specific predator, and is called 'no._prey_per_stmch'.
-
-Using similar logic,'prey_weight_g' is the total weight of prey in the multiple stomachs sampled to make up one datapoint. 'indiv_prey_weight' is then the weight of one single prey individual found in the stomach
 
 There are some other column names which are useful to note:
 
-* ices_rectangle accounts for location of points, where each area the points are sampled in is split up into a number of smaller rectangles and each is given a unique name
+* ices_rectangle accounts for the location of observations, where each area that the points are sampled in is split up into a number of smaller rectangles and each is given a unique name
+* haul_id is a identification tag given to each individual ship which recorded observations
+* The weight of each individual prey (indiv_prey_weight) and each predator (pred_weight_g) are measured in grams
 * ppmr stands for 'predator prey mass ratio', and is calculated using:
 
 $$
     \text{PPMR} = \frac{\text{predator mass}}{\text{prey mass}}
 $$
-(where the prey mass is the average mass of prey of a certain type found in a single predator stomach)
-* haul_id is a identification tag given to each individual ship which recorded observations
+(where the prey mass is the 'indiv_prey_weight', representing the prey mass of a single prey in the stomach of a single observation)
 
 # Distribution of prey type eaten for each predator
 
@@ -129,13 +129,12 @@ ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
   labs(title = "Distribution of prey types for each predator species", x="Prey type",
-       y="Number of Observations")
+       y="Number of observations")
  
 #geom_bar_pattern() creates a bar chart from the specified data, where each category has a different pattern used to fill it
 #Using different patterns as well as different colours to fill the bars ensures the data can be understood if looked at in grey scale, and makes the document accessible for colour blind people
 #facet_wrap() means an individual bar chart is created for each individual predator species
 #'theme()' adjusts the labels along the x-axis so they lie slightly angled to the vertical direction so they are easy to read
-#scale_fill_brewer changes the colour palette of the plot so that the colours are easy to distinguish between, and renames the title of the key to show which colour means what
 #legend.position="none" means that there is no key to explain what each bar shows, as the x-axis is very clear in describing each bar
 ```
 
@@ -146,8 +145,8 @@ The prey types are:
 * Benthos: organisms that live on/near the bottom of a body of water
 * Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers). Fish are a type of nekton, but for this data set fish are recorded as separate entities.
 * Nekton: the actively swimming aquatic organisms that can resist a strong current of water (the classification of nekton for this data set excludes any fish)
-* Other: miscellaneous types of aquatic animals that don't fit into the other categories
 * Zooplankton: animal types of plankton (where plankton are aquatic organisms that are unable to swim effectively against currents)
+* Other: miscellaneous types of aquatic animals that don't fit into the other categories, including sand, debris, crustaceans and unclassified digested remains
 
 We can see that some predators eat a range of prey types (e.g. Whiting), while others prefer to eat a single prey type in abundance (e.g. European Hake and Monkfish mostly consume fish as their prey).
 
@@ -156,7 +155,8 @@ We can see that some predators eat a range of prey types (e.g. Whiting), while o
 ```{r lprey density}
 ggplot(renamed_df, aes(x=lprey_weight)) +
   geom_density(aes(weight = no._prey_per_stmch), color="red") +
-  labs(title = "Density of log(prey mass) observations", x="log(prey mass)") + 
+  labs(title = "Density of log(prey mass) observations", x="log(prey mass)", 
+      y="Number density of observations") + 
   facet_wrap(~pred_species, scale="free_y")   
 ```
 
@@ -166,33 +166,36 @@ This plot shows that different predator species consume differently sized distri
 * Sprat, and 
 * Megrim
 
-# Most common prey weights
+# Most common prey masses
 
-```{r log(prey weight) v. number of prey per observation}
+```{r}
+renamed_df$haul_id_short <- gsub("\\-.*", "", renamed_df$haul_id)
+renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
+#the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
+```
+
+```{r log(prey mass) v. number of prey per observation}
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
-      labs(title = "Number of prey per predator stomach v. log(prey weight) ", 
-       x="log(prey weight)", y="Number of prey per predator stomach") + 
+      labs(title = "Number of prey per predator stomach v. log(prey mass) ", 
+       x="log(prey mass)", y="Number of prey per predator stomach") + 
       geom_point(size=0.5)
 
 #geom_point() adds individual points which show individual recorded points
 #size=0.5 defines the size of each point on this graph
 ``` 
 
-This graph is looking at the distribution of the weight of prey recorded, i.e. looking at what is the most common prey weight over all prey species. It is a graph over all the data points, so includes recordings from all the ships involved.
+This graph is looking at the distribution of the mass of prey recorded, i.e. looking at what is the most common prey mass over all prey species. It is a graph over all the data points, so includes recordings from all the ships involved.
 
 There are some potentially interesting results, so results from different ships were plotted on individual curves to further look into these results.
 
 ```{r sep by all ships, fig.height=12, fig.width=15}
-renamed_df$haul_id_short <- gsub("\\-.*", "", renamed_df$haul_id)
-renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
-#the haul_id values are renamed to be shortened versions of the ship names (e.g. CLYDE) rather than the complete id (e.g. CLYDE-1935-6)
-
-ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "Number of prey per observation v. log(prey weight) - separated by all ship names",
-       x="log(prey weight)", y="Number of prey per observation") + 
-  geom_point(size=0.02, colour="red") +
-  theme(strip.text = element_text(size = 5)) + 
-  facet_wrap(~renamed_df$haul_id_short, scale="free_y") 
+ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch, color=haul_id_short)) + 
+  labs(title = "Number of prey per observation v. log(prey mass) - separated by all ship names", 
+       x="log(prey mass)", y="Number of prey per observation") + 
+  geom_point(size=0.02) +
+  theme(strip.text = element_text(size = 7), legend.position="none", 
+        plot.title = element_text(size=22), axis.title = element_text(size=22)) + 
+  facet_wrap(~renamed_df$haul_id_short, scale="free_y")
 ```
 
 Taking a closer look at some of these ships gives the plots below:
@@ -207,25 +210,25 @@ interesting_haul <- filter(renamed_df,
 haul_list_interesting <- unique(interesting_haul$haul_id_short)
 #creates an array containing every individual (renamed) ship name that we are interested in
 
-ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch)) + 
-  labs(title = "Number of prey per observation v. log(prey weight) 
+ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch, 
+                                     color=haul_id_short)) + 
+  labs(title = "Number of prey per observation v. log(prey mass) 
        - separated by ship names, for a selection of 6 ships",
-       x="log(prey weight)", y="Number of prey per observation") + 
-  geom_point(size=0.02, colour="red") +
-  theme(strip.text = element_text(size = 10)) + 
+       x="log(prey mass)", y="Number of prey per observation") + 
+  geom_point(size=0.02) +
+  theme(strip.text = element_text(size = 10), legend.position="none") + 
   facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
 ```
 
 
-
 These six graphs show a range of unusual looking points:
 
-1. $y \propto e^{-x}$ relation for END04 (i.e. no. per stomach is proportional to 1/prey weight)
-2. lots of observations for single prey weights for LUC and CLYDE (554)
-3. lots of the same no. of prey per observation observations for HIDDINK.(27180)
+1. $y \propto e^{-x}$ relation for END04 (i.e. no. per stomach is proportional to $\frac{1}{\text{prey mass}}$)
+2. lots of observations for single prey masses for LUC and CLYDE
+3. lots of the same no. of prey per observation observations for HIDDINK
 4. the EXCmacDATSTO815 and Excmacdatsto815error seem to represent exactly the same data
 
-There are a number of other ships which also provided potentially erroneous data, and the number of datapoints affected are as below:
+There are a number of other ships which also provided potentially erroneous data, and the total number of datapoints affected are as below:
 
 ```{r no of obs}
 type1 <- length((filter(renamed_df, haul_id_short=='END04'))$haul_id_short)
@@ -237,7 +240,7 @@ type3 <- length((filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUC
 
 type4 <- length((filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error'))$haul_id_short)
 
-ship_erroneous <- data.frame("Graph_Type"=c("y proportional to exp(-x)", "Single prey weight"
+ship_erroneous <- data.frame("Graph_Type"=c("y proportional to exp(-x)", "Single prey mass"
                                       , "Same number of prey per observation", "Same data"),
                         "Number_of_observations"=c(type1, type2, type3, type4))
 #creates a data frame which shows the number of observations of each error 'type'
@@ -255,12 +258,12 @@ $$
 
 This means that approximately $13 \%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that any results are as reliable as possible.
 
-# Prey and predator weight relation
+# Prey and predator mass relation
 
-We are attempting to find a link between the predator weight and the prey weight, and $\log()$ of each axis is used to see the proportionality of the axes. The mathematics behind this is as follows:
+We are attempting to find a link between the predator mass and the prey mass, and $\log()$ of each axis is used to see the proportionality of the axes. The mathematics behind this is as follows:
 
 $$
- \log (\text{prey weight}) = m \times \text{log(predator weight)} + c ,
+ \log (\text{prey mas}) = m \times \text{log(predator mass)} + c ,
 $$
 
 where m is the gradient of the slope and c is the y-intercept (thinking of this graph as a linear model).
@@ -268,56 +271,64 @@ where m is the gradient of the slope and c is the y-intercept (thinking of this 
 Taking the exponential of both sides,
 
 $$
-  \text{prey weight} = \exp({{m}\times{\log(\text{predator weight})}}) + \log(D) ,
+  \text{prey mass} = \exp({{m}\times{\log(\text{predator mass})}}) + \log(D) ,
 $$
 where $\log(D) = c$. 
 
 Finally,
 
 $$
-  \text{prey weight} = \text{predator weight}^m \times D
+  \text{prey mass} = \text{predator mass}^m \times D
 $$
 
-Hence, we want $m = 1$ to show that predator weight is linearly proportional to prey weight (as expected). However, to simply show that the two variables are dependent on each other, we are looking for instances where $m \neq 0$
+Hence, we want $m = 1$ to show that predator mass is linearly proportional to prey mass (as expected). However, to simply show that the two variables are dependent on each other, we are looking for instances where $m \neq 0$
 
-```{r log(prey weight) v. log(pred weight), message=FALSE}
+```{r log(prey mass) v. log(pred mass), message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
 
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
-  labs(title = "log(prey weight) v. log(predator weight) plot", 
-       x="log(predator weight)", y="log(prey weight)") + 
-  geom_hex(bins = 50) +
-  scale_fill_gradient2(low = "black", mid = "orange", high = "red", midpoint = 200) +
+  labs(title = "log(prey mass) v. log(predator mass) plot", 
+       x="log(predator mass)", y="log(prey mass)") + 
+  geom_hex(bins = 20) +
+  scale_fill_viridis(direction=-1, option="C") +
   stat_smooth(method='lm', se=FALSE, colour="blue") +
   theme_classic()
 
-#theme_classic() removes the grey background of the plot to make it easier to read and understand
+# theme_classic() removes the grey background of the plot to make it easier to read and understand
 # stat_smooth adds a line of best fit plotted through the points
 # method='lm' ensures it is a straight line, i.e. a linear model
 # se=FAlSE creates only a single line, with no error of margin included
 
 #geom_hex creates "bins" in the data where the density is calculated over
-#bins=50 means that there are 50 "bins" in the horizontal direction and 50 in the vertical
-#scale_fill_gradient2 creates a density colour scale, meaning that areas with a high density of points are red and areas with a low density of points are darker in colour
+#bins=20 means that there are 20 "bins" in the horizontal direction and 20 in the vertical
+#scale_fill_viridis creates a density colour scale, where the least dense area is yellow and the most dense is purple
 
 slope <- coef(lm(renamed_df$lprey_weight~renamed_df$lpred_weight))
-cat("Slope of the log(prey weight) v. log(predator weight) line of best fit:", slope[2])
+cat("Slope of the log(prey mass) v. log(predator mass) line of best fit:", slope[2])
+
+lpred_lpreyuncert <- lm(lprey_weight ~ lpred_weight, data = renamed_df)
+cat("Standard error of this line of best fit:", summary(lpred_lpreyuncert)$coefficients[4])
+
 #'cat()' prints some output message as purely the characters included in the '()' section
 
 # coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
 ```
 
-For this graph, the slope is not equal to one. However, this graph is plotted over the entire data set and includes values from all of the available predator species.
+For this graph, the slope is equal to $0.6712536 \pm 0.001915732$. This is not equal to $1$, and therefore this plot supports the assumption that the predator and prey masses are dependent on each other in some way.
 
-Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey weight for each specific species.
 
-## Prey v. predator weight plot, separated by predator species
+
+For this graph, the most dense area (the area with the greatest number of points in a single hexagonal 'bin') is purple, and the least dense area is in yellow. Therefore, we can see that there are lots of observations around the point where $\log(\text{predator mass}) = 6$ and $\log(\text{prey mass}) = 0$, and near where $\log(\text{predator mass}) = -1$ and $\log(\text{prey mass}) = -5$. We can see that the line of best fit (in blue) isn't plotted directly through these most dense areas, and therefore we can't    
+
+However, this graph is plotted over the entire data set and includes values from all of the available predator species. Instead, separate the plots by predator species to see if there is some proportionality between the predator and prey mass for each specific species.
+
+## Prey v. predator mass plot, separated by predator species
 
 ```{r sep by pred species, message=FALSE}
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
-  labs(title = "log(prey weight) v. log(predator weight), separated by predator species", 
-       x="log(predator weight)", y="log(prey weight)") +
+  labs(title = "log(prey mass) v. log(predator mass), separated by predator species", 
+       x="log(predator mass)", y="log(prey mass)") +
   geom_point(size=0.01, colour="red") + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
@@ -351,8 +362,8 @@ while(i<=length(species_list)){
 
 #'while' means that this function repeats through the length of 'species_list' until all predator species are accounted for
 #i=i+1 increases the value of i each time through this loop to motivate this repeat
-#this creates a data frame (species_df) containing each indivdual predator species, then calculates the gradient of the log(pred weight) v. log(prey weight) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
-#this also creates a linear model of log(prey weight) against log(predator weight) for each individual predator species, and extracts the standard error of the line of best fit for this linear model, storing this in an array called 'uncert'
+#this creates a data frame (species_df) containing each individual predator species, then calculates the gradient of the log(pred mass) v. log(prey mass) graph for this individual predator species, then inserts this gradient value to the ith value of an array named 'species_grad'
+#this also creates a linear model of log(prey mass) against log(predator mass) for each individual predator species, and extracts the standard error of the line of best fit for this linear model, storing this in an array called 'uncert'
 
 pvp_grads <- data.frame("Predator_Species"=c(species_list),
                         Gradient=c(species_grad),
@@ -728,7 +739,7 @@ ggplot(herring_model, aes(x = .resid)) +
   labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density') +
   theme_classic()
 
-#plots the density of the residuals of the lppmr v lpred_weight graph for Herring
+#plots the density of the residuals of the lppmr v lpred mass graph for Herring
 ```
 
 We can see that for the predator species Herring, the residuals do not look like they are normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{(\text{ppmr})}$ and $\log{(\text{predator mass})}$ are independent of each other. 
