@@ -43,7 +43,7 @@ df <- stom_df %>%
                             pred_weight_g, pred_length_cm, prey_weight_g, 
                             prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, 
                             prey_count, n_stomachs, 
-                            no._prey_per_stmch = prey_count/n_stomachs, PPMR) 
+                            no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
 #creating a new data set called 'df' which only contains certain selected columns
 ```
 
@@ -57,7 +57,7 @@ df<- df[!(is.na(df$year)),]
 df<- df[!(is.na(df$ices_rectangle)),]
 #Removes any points where the value is NA
 
-df$lppmr <- log(df$PPMR)
+df$lppmr <- log(df$ppmr)
 df$lprey_weight <- log(df$indiv_prey_weight)
 df$lpred_weight <- log(df$pred_weight_g)
 #Adds columns which take the log value of PPMR, individual prey weight and predator weight to the main data set
@@ -304,16 +304,16 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
 #bins=20 means that there are 20 "bins" in the horizontal direction and 20 in the vertical
 #scale_fill_viridis creates a density colour scale, where the least dense area is yellow and the most dense is purple
 
-slope <- coef(lm(renamed_df$lprey_weight~renamed_df$lpred_weight))
-lpred_lpreyuncert <- lm(lprey_weight ~ lpred_weight, data = renamed_df)
+slope <- lm(lprey_weight ~ lpred_weight, data = renamed_df)
 
-cat("Slope of the log(prey mass) v. log(predator mass) line of best fit:", slope[2],
+cat("Slope of the log(prey mass) v. log(predator mass) line of best fit:", 
+        summary(slope)$coefficients[2],
     "\n",
-    "Standard error of this line of best fit:", summary(lpred_lpreyuncert)$coefficients[4])
+    "Standard error of this line of best fit:", summary(slope)$coefficients[4])
 
 #'cat()' prints some output message as purely the characters included in the '()' section
 
-# coef(lm()) creates an array containing the coefficients of the linear model of the relationship between two axes
+# summary(slope)$coefficients creates an array containing the coefficients of the linear model of the relationship between two axes, including the slope of the LOBF and the standard error of this line
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
 ```
 
@@ -606,12 +606,12 @@ $\pm$ their standard error, the species Megrim, Norway Pout, Poor Cod have a gra
 ## Different weightings of the line of best fit
 
 ```{r poor cod, message=FALSE}
-PoorCod_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
-#creating a data frame only containing observations where the predator species is poor cod.
+Herring_df <- renamed_df %>% filter(pred_species == fixed("Herring"))
+#creating a data frame only containing observations where the predator species is herring
 
-ggplot(data=PoorCod_df, aes(lpred_weight, lppmr)) + 
+ggplot(data=Herring_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
-  labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
+  labs(title = "log(PPMR) v. log(predator mass) plot: Herring", 
        x="log(Predator mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
   stat_smooth(aes(weight=no._prey_per_stmch, color='by number of prey in stomach',  
                   linetype='by number of prey in stomach'), 
@@ -629,39 +629,49 @@ ggplot(data=PoorCod_df, aes(lpred_weight, lppmr)) +
 # linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
 #weighted by number of prey per observation
-perstmch_weighting <- 
-  coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight, weight=PoorCod_df$no._prey_per_stmch))
-perstmch_uncert <- lm(lppmr ~ lpred_weight, data = PoorCod_df,
-                     weight=PoorCod_df$no._prey_per_stmch)
-summary(perstmch_uncert)$coefficients[4]
+perstmch_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df, 
+                         weight=Herring_df$no._prey_per_stmch)
 
 #weighted by prey biomass
-biomass_weighting <- 
-  coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight, weight=PoorCod_df$prey_weight_g))
-biomass_uncert <- lm(lppmr ~ lpred_weight, data = PoorCod_df, weight=PoorCod_df$prey_weight_g)
+biomass_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df, 
+                        weight=Herring_df$prey_weight_g)
 
 #no weighting
-no_weighting <- coef(lm(PoorCod_df$lppmr~PoorCod_df$lpred_weight))
-no_uncert <- lm(lppmr ~ lpred_weight, data = PoorCod_df)
+no_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df)
+
+cat("Weighted by the number of prey per observation:", 
+    "\n",
+    "Slope:", summary(perstmch_weighting)$coefficients[2],
+    "\n",
+    "Standard error:", summary(perstmch_weighting)$coefficients[4],
+    "\n")
+
+cat("Weighted by the prey biomass:", 
+    "\n",
+    "Slope:", summary(biomass_weighting)$coefficients[2],
+    "\n",
+    "Standard error:", summary(biomass_weighting)$coefficients[4],
+    "\n")
+
+cat("With no weightings in the calculations:", 
+    "\n",
+    "Slope:", summary(no_weighting)$coefficients[2],
+    "\n",
+    "Standard error:", summary(no_weighting)$coefficients[4],
+    "\n")
 ```
 
-Looking at just the predator species 'Poor Cod'. There are three LOBF (line of best fit), weighted by different variables, each with different values for their gradient:
+Looking at just the predator species 'Herring'. There are three LOBF (line of best fit), weighted by different variables, each with individual values for their gradient.
 
-1. green and dotted: by number of prey per observation, $m = -1.652398 \pm 0.1275232$
-2. red and dashed: by prey biomass, $m = -0.001483607 \pm 0.1079585$
-3. blue: no weighting in the LOBF, $m = -0.08453972 \pm 0.1052513$
-
-, where these values are $\pm$ (their standard error).
-
-When the LOBF is weighted by the prey biomass and has no weighting, the gradient is equal to $0 \pm$ (their standard error). Hence, the approximation (of slope $ = 0$) is supported by the data when looking at a prey biomass weighting. 
-
-This is a much more accurate result and provides much more compelling evidence that the PPMR is independent of the predator mass. Although this assumption is only supported by analysis on the predator species Poor Cod, we will assume that independence being upheld for Poor Cod suggests independence of the variables for all predator species.
+For observations of the predator species Poor Cod the gradient is equal to $1$ (to 1 significant to figure and $\pm$ (their standard error)) when the line of best fit is weighted by either the prey biomass or the number of prey in the stomach. This is compelling evidence for some dependency between the PPMR and the predator mass. 
 
 ## Residuals of the log(predator mass) against log(PPMR) plot {.tabset}
 
-We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are dependent on one another in some way, hence the predator mass is dependent of the PPMR.  
+We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are dependent on one another in some way, hence the predator mass is dependent on the PPMR.  
 
-Heteroscedasticity is when the residuals (error terms) are unequally scattered. For example, residuals may get more 'spread out' as the fitted values get larger. This occurs in data sets where there is a large range of data values, and is a problem because we want residuals with a constant variance. This is seen when the residuals are approximately normally distributed, and hence if residuals do not show a normal distribution then it is unclear whether or not the method used to infer the parameters of the linear relationship is a good one.
+`Heteroscedasticity' is when the residuals (error terms) are unequally scattered. However, residuals with a constant variance will show a density that is approximately normally distributed. Therefore, if residuals do not show a normal distribution (and instead show heteroscedasticity), then it is unclear whether or not the method of a linear relationship is appropriate to fit the data set.
+
+For the arbitrarily selected predator species Herring, we get the following plots which all discuss the idea of normally distributed residuals.
 
 ```{r Herring info,  message=FALSE}
 herring_df <-  renamed_df %>% filter(pred_species == fixed("Herring"))
@@ -686,7 +696,7 @@ ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
        x='log(predator mass)', y='log(PPMR)')
 #showing the residuals of each point to the line of best fit
 #geom_smooth() creates the regression line of the regression model from lm()
-#geom_segment() draws a line from each point to the regressionline 
+#geom_segment() draws a line from each point to the regression line 
 ```
 
 This plot shows how distributed the points are in comparison to the line of best fit. For a 'well fitting' line of best fit, we would expect the residuals to be approximately normally distributed. As discussed earlier, the residual of a point is equal to:
@@ -695,7 +705,11 @@ $$
 $$
 where the predicted/fitted value is equal to the value as predicted by the line of best fit.
 
+In order to display a linear relationship between the axes, we would expect that the residuals of this plot would be normally distributed. This would meant that the data points are equally scattered around the line of best fit, and therefore the two axes would show linearity.
+
 ### Residuals v. fitted values
+
+To further investigate this linearity, we plot the residuals (as calculated from the linear model) against the fitted values as predicted by the line of best fit.
 
 ```{r residuals v. fitted values, message=FALSE}
 ggplot(herring_model, aes(x = .fitted, y = .resid)) +
@@ -709,18 +723,10 @@ ggplot(herring_model, aes(x = .fitted, y = .resid)) +
 #.resid creates a list of the residuals of each individual data point
 ```
 
-This graph plots the residual of each observation against its fitted value (as predicted by the line of best fit). This plot is used to detect unequal residual variances and any outliers. We can see that the residuals generally increase as the fitted values increase, which suggests that the residuals are potentially not normally distributed. To look further into this possibility, we will next plot a qqplot.
 
-### qqplot
+This graph plots the residual of each observation against its fitted value (as predicted by the line of best fit). This plot is used to detect unequal residual variances and any anomalous points. 
 
-```{r qqplot, message=FALSE}
-qqnorm(res)
-qqline(res)
-#plot a Q-Q plot to determine if the residuals follow a normal distribution
-#for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
-```
-
-A qqplot (quantile-quantile plot) shows if two data sets come from the same distribution. For this data set, we plot the actual residuals against the expected residuals if the residuals were normally distributed. The points on this graph should fall on the straight line (at a 45 degree angle), and if they don't then the residuals do not appear to be normally distributed.
+We can see that the residuals generally increase in value as the fitted values increase, which suggests that the residuals are potentially not normally distributed.
 
 ### Density of residuals
 
@@ -733,7 +739,23 @@ ggplot(herring_model, aes(x = .resid)) +
 #plots the density of the residuals of the lppmr v lpred mass graph for Herring
 ```
 
-We can see that for the predator species Herring, the residuals do not look like they are normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{(\text{PPMR})}$ and $\log{(\text{predator mass})}$ are independent of each other. 
+By plotting the density of the residuals, we can see that for the predator species Herring the residuals do not look normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{(\text{PPMR})}$ and $\log{(\text{predator mass})}$ are independent of each other because there appears to be no normal distribution of residuals and thus no linearity between the axes.
+
+### qqplot
+
+```{r qqplot, message=FALSE}
+qqnorm(res, xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - for the species Herring")
+qqline(res, col="blue")
+#plot a Q-Q plot to determine if the residuals follow a normal distribution
+#for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
+```
+
+Laslty, a qqplot (quantile-quantile plot) shows if two data sets come from the same distribution. For this data set, we plot the actual residuals against the expected residuals if the residuals were normally distributed. The points on this graph should fall on the straight line (at a 45 degree angle), and if they don't then the residuals do not appear to be normally distributed.
+
+We can see that these points roughly fall along the 45 degree-angled line, but not strongly and therefore we can claim that this is not evidence for normally distributed residuals. 
+
+Therefore, all previous graphs support the idea that the residuals show heteroscedasticity (meaning that they are unequally scattered), hence the residuals are not normally distributed. This means we do not have significant supporting evidence that the two axes are linearly related, and therefore we can claim that the $\log$(PPMR) and $\log$(predator mass) in fact are independent of each other.
 
 ## Residual plots for the individual predator species
 
@@ -1181,6 +1203,8 @@ qqnorm(resid(final),xlab = "Theoretical Residuals", ylab = "Sample Residuals",
 qqline(resid(final), col="blue")
 ```
 
+???
+
 ```{r}
 renamed_df %>% 
   ggplot(aes(x = resid(final))) +
@@ -1192,6 +1216,8 @@ renamed_df %>%
   scale_color_manual(values=c('red', 'black')) +
   scale_linetype_manual(values = c("solid", "dashed"))
 ```
+
+???
 
 ## Separated by predator species - Density of residual
 
@@ -1206,9 +1232,7 @@ renamed_df %>%
   facet_wrap(~pred_species) +
   theme(legend.position="none")
 ```
-
-DESCRIBE HOW THE RESIDUALS LOOK
-
+?????
 
 ## Comparisons for Mackerel {.tabset}
 
