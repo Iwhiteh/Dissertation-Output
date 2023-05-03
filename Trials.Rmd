@@ -928,18 +928,6 @@ mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
 a <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short), data = mackerel_df, REML=FALSE)
 
 summary(a)
-
-qqnorm(resid(a))
-qqline(resid(a))
-#look for lying along the line
-
-mackerel_df %>% 
-  ggplot(aes(x = resid(a))) +
-  geom_density(colour="blue") +
-  labs(title='Density plot of the residuals for model a: Mackerel', x='Residuals', y='Density')
-
-#resid(a) gives the residuals of model a
-#The residuals are found by subtracting the fitted from the predicted values
 ```
 
 This is mathematically represented by:
@@ -964,6 +952,28 @@ And:
 
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name
+
+```{r}
+mackerel_df %>% 
+  ggplot(aes(x = resid(a))) +
+  geom_density(colour="blue") +
+  labs(title='Density plot of the residuals for model a: Mackerel', x='Residuals', y='Density')
+
+#resid(a) gives the residuals of model a
+#The residuals are found by subtracting the fitted from the predicted values
+```
+
+We can plot the density of the residuals of this model. Normally distributed residuals suggests that the residuals have a constant variance and hence the axes are related in some way.
+
+```{r}
+qqnorm(resid(a),xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - mixed effect model with ship name")
+qqline(resid(a), col="blue")
+```
+
+We have also plotted a qqplot which shows the actual residuals (calculated from the data set) plotted against the expected residuals if they were completely normally distributed. If the residuals are perfectly normally distributed, then the points should fall on the straight line which is at a 45 degree angle.
+
+We can see that the points fall roughly on the straight line but not completely, and therefore the data set does not very accurately fit to the model.
 
 ### With year
 
