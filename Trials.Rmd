@@ -31,6 +31,7 @@ library(RColorBrewer)
 library(viridis)
 library(hexbin)
 library(ggpattern) 
+library(sjPlot)      
 ```
 
 ```{r loading, message=FALSE}
@@ -611,7 +612,7 @@ PoorCod_df <- renamed_df %>% filter(pred_species == fixed("Poor Cod"))
 ggplot(data=PoorCod_df, aes(lpred_weight, lppmr)) + 
   geom_point(size=0.5) +
   labs(title = "log(PPMR) v. log(predator mass) plot: Poor Cod", 
-       x="log(Pred mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
+       x="log(Predator mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
   stat_smooth(aes(weight=no._prey_per_stmch, color='by number of prey in stomach',  
                   linetype='by number of prey in stomach'), 
               method='lm', se=FALSE) +
@@ -708,7 +709,6 @@ ggplot(herring_model, aes(x = .fitted, y = .resid)) +
 #.resid creates a list of the residuals of each individual data point
 ```
 
-
 This graph plots the residual of each observation against its fitted value (as predicted by the line of best fit). This plot is used to detect unequal residual variances and any outliers. We can see that the residuals generally increase as the fitted values increase, which suggests that the residuals are potentially not normally distributed. To look further into this possibility, we will next plot a qqplot.
 
 ### qqplot
@@ -749,13 +749,13 @@ ggplot(model, aes(x = .resid)) +
 
 This is a histogram plot of the residuals of the plot, separated for each predator species. As discussed earlier, a normal distribution of the density of residuals would suggest that the data fits a linear model. This would then infer that the axes would be related to one another.
 
-However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another when modelling using a linear model.
+However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another when modelling using a linear model. This also suggests that using a linear model (where we approximate $y=mx +c$) is not appropriate for this set of data.
 
-Instead use a different model (a mixed effects model) for this data set to attempt to more accurately approximate certain parameters in the variable relationships.
+Instead, we use a different model (a mixed effects model) to fit this data set to in order to attempt to more accurately approximate certain parameters in the variable relationships.
 
 # Introducing a mixed effects model
 
-We will introduce a mixed effects model to account for some variance that external effects may cause to the data.
+We will now fit the data to a mixed effects model, which allows us to account for some variance that external effects may cause to the data.
 
 ## Building up the model {.tabset}
 
@@ -776,7 +776,7 @@ Where:
 renamed_df %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_point(size=0.1) + 
-    labs( x='log(predator mass)', y='log(PPMR)') +
+    labs(x='log(predator mass)', y='log(PPMR)') +
     theme_classic()
 #theme_classic() removes the grey background of the plot to make it easier to read
 ```
@@ -794,11 +794,25 @@ Random effects: year (fixed slopes and random intercepts)
 one <- lmer(lppmr ~ lpred_weight + (1|year), data = renamed_df, REML=FALSE)
 #same slope for every predator species, but varying intercept
 
-kable(coef(one)$year)
-#This outputs the intercept and slope terms for each predator species for the fitted model
+year_list <- c(sort(unique(renamed_df$year)))
+year_list_2000 <- year_list[c(year_list>2000)]
+#a vector only including the values for year which are greater than 2000
+
+one_df <- data.frame(Year=c(year_list),
+                        "Slope"=c(coef(one)$year[2]))
+one_df <- one_df %>% transmute(Year, Slope=lpred_weight) 
+one_df <- one_df[one_df$Year %in% year_list_2000, ]
+kable(one_df)
+#This outputs the intercept term for each predator species for the fitted model, and only for values where the year is after 2000
+
+plot_model(one, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects: Intercepts - Model 1') + 
+        xlim(factor(year_list_2000))
+#Plots a model of the estimated values of the random effects variable
 ```
 
-Here, there is the same slope for every predator species, but each species group has a different y-intercept (i.e. the line for each predator species group crosses the $\log$(predator mass)=0 line at a different value for $\log$(PPMR).
+Here, there is the same slope for every predator species, but each species group has a different y-intercept (i.e. the line for each predator species group crosses the $\log$(predator mass)=0 line at a different value for $\log$(PPMR)). These values are only approximated, and the plot shows that
 
 This is mathematically represented by:
 
@@ -827,7 +841,16 @@ Random effects: year (random slope and fixed intercept)
 two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|year), data = renamed_df, REML=FALSE)
 #(0+ | ) means that the slope of the graph is different for each predator species, but they each group has the same intercept
 
-kable(coef(two)$year)
+two_df <- data.frame(Year=c(year_list),
+                        "Intercept"=c(coef(two)$year[1]))
+two_df <- two_df %>% transmute(Year, Intercept=X.Intercept.) 
+two_df <- two_df[two_df$Year %in% year_list_2000, ]
+kable(two_df)
+
+plot_model(two, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects: Slope - Model 2') + 
+        xlim(factor(year_list_2000))
 ```
 
 This is mathematically represented by:
@@ -859,9 +882,10 @@ Random effects: year (random slope and random intercept)
 three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
 #Random intercept and random slope (correlated)
 
-summary(three)
-
-kable(coef(three)$year)
+plot_model(three, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects - Model 3') + 
+        xlim(factor(year_list_2000))
 ```
 
 This is mathematically represented by:
