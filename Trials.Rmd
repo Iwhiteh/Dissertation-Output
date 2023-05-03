@@ -966,7 +966,7 @@ mackerel_df %>%
 We can plot the density of the residuals of this model. Normally distributed residuals suggests that the residuals have a constant variance and hence the axes are related in some way.
 
 ```{r}
-qqnorm(resid(a),xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+qqnorm(resid(a), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - mixed effect model with ship name")
 qqline(resid(a), col="blue")
 ```
@@ -982,15 +982,6 @@ b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
           data = mackerel_df, REML=FALSE)
 
 summary(b)
-
-qqnorm(resid(b))
-qqline(resid(b))
-#look for lying along the line
-
-mackerel_df %>% 
-  ggplot(aes(x = resid(b))) +
-  geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model b: Mackerel', x='Residuals', y='Density')
 ```
 
 Mathematical representation
@@ -1011,7 +1002,18 @@ And:
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name, year
 
+```{r}
+qqnorm(resid(b), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - mixed effect model with ship name and year")
+qqline(resid(b), col="blue")
+```
 
+```{r}
+mackerel_df %>% 
+  ggplot(aes(x = resid(b))) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals for model b: Mackerel', x='Residuals', y='Density')
+```
 
 ### With location
 
@@ -1020,15 +1022,6 @@ c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weigh
             (1+lpred_weight|ices_rectangle), data = mackerel_df, REML=FALSE)
 
 summary(c)
-
-qqnorm(resid(c))
-qqline(resid(c))
-#look for lying along the line
-
-mackerel_df %>% 
-  ggplot(aes(x = resid(c))) +
-  geom_density(colour="green") +
-  labs(title='Density plot of the residuals for model c: Mackerel', x='Residuals', y='Density')
 ```
 
 Mathematical representation:
@@ -1048,6 +1041,20 @@ And:
 
 * Fixed effects: $\log$(predator mass)
 * Random effects: ship name, year, ices_rectangle
+
+```{r}
+qqnorm(resid(c), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - mixed effect model with ship name, 
+              year, and location")
+qqline(resid(c), col="blue")
+```
+
+```{r}
+mackerel_df %>% 
+  ggplot(aes(x = resid(c))) +
+  geom_density(colour="green") +
+  labs(title='Density plot of the residuals for model c: Mackerel', x='Residuals', y='Density')
+```
 
 ### Comparing
 
@@ -1073,6 +1080,15 @@ The BIC value is the smallest when all three random effects are considered, and 
 ## Mixed effects model - over all species
 
 The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
+
+```{r final model}
+ final <- lmer(lppmr ~ lpred_weight + pred_species + 
+            (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
+            (1+lpred_weight|ices_rectangle), 
+            data = renamed_df, REML=FALSE)
+
+summary(final)
+```
 
 Mathematical representation:
 $$
@@ -1122,18 +1138,50 @@ So,
 * Fixed effects: $\log$(predator mass), predator species
 * Random effects: ship name, year, ices_rectangle
 
-```{r final model}
- final <- lmer(lppmr ~ lpred_weight + pred_species + 
-            (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
-            (1+lpred_weight|ices_rectangle), 
-            data = renamed_df, REML=FALSE)
+This model has the following variables:
 
-summary(final)
+Variable name |  Meaning            | Value   
+------------- | -----------         | ---------    
+$\beta_{0}$   | the intercept term  | 5.0363484
+$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.2737651
+$\sigma_{H[0h]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6247
+$\sigma_{H[1h]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2509
+$\sigma_{Y[0y]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
+$\sigma_{Y[1y]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year|  0.1194
+$\sigma_{R[0r]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8934
+$\sigma_{R[1r]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1545
+$\sigma_{\epsilon[ihyr]}$ | the s.d. of the residual/error term | 1.8944
 
-qqnorm(resid(final))
-qqline(resid(final))
-#look for lying along the line
+and the fixed effects coefficients are:
 
+Predator Species | Estimated gradient ($\alpha_p$)
+-------------   | ----------- 
+Blue Whiting    | \hl{?} 
+Cod	            | -0.2123354446   
+Common Dab      | -0.3095996172   
+European Hake   | -1.4461576412   
+Haddock         | 0.5266592309   
+Herring         | 1.0340249983   
+Horse Mackerel  | 1.1556948335  
+Mackerel        | 1.0736578125   
+Megrim          | -0.7387651598   
+Monkfish        | -1.9261290331   
+Norway Pout     | 0.8562367326  
+Plaice          | 0.7833357976  
+Poor Cod        | -0.0006362586  
+Sole            | 0.6118634430   
+Sprat           | 0.9023672482   
+Whiting         | -0.4030090827 
+
+BLUE WHITING??
+
+```{r}
+qqnorm(resid(final),xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - final mixed effect model")
+qqline(resid(final), col="blue")
+```
+
+```{r}
 renamed_df %>% 
   ggplot(aes(x = resid(final))) +
   geom_density(aes(linetype="line", color="line")) +
@@ -1145,38 +1193,9 @@ renamed_df %>%
   scale_linetype_manual(values = c("solid", "dashed"))
 ```
 
-This model has the following variables:
+## Separated by predator species - Density of residual
 
-Variable name |  Meaning            | Value   
-------------- | -----------         | ---------    
-$\beta_{0}$   | the intercept term  |  5.0363484
-$\beta_{1}$   | the fixed effect (slope) for $\log(\text{predator mass})$ | 0.2737651
-$\sigma_{H[0h]}$ |  s.d. for the intercept term $H_{0h}$, dependent on the haul_id_short | 1.6247
-$\sigma_{H[1h]}$ |  s.d. for the slope term $H_{1h}$, dependent on the haul_id_short | 0.2509
-$\sigma_{Y[0y]}$ |  s.d. for the intercept term $Y_{0y}$, dependent on the year | 1.0074
-$\sigma_{Y[1y]}$ |  s.d. for the slope term $Y_{1y}$, dependent on the year|  0.1194
-$\sigma_{R[0r]}$ |  s.d. for the intercept term $R_{0r}$, dependent on the ices_rectangle | 0.8934
-$\sigma_{R[1r]}$ |  s.d. for the slope term $R_{1r}$, dependent on the ices_rectangle | 0.1545
-$\sigma_{\epsilon[ihyr]}$ | the s.d. of the residual/error term | 1.8944
-
-## Separated by predator species {.tabset}
-
-Separating the plots out over the predator species provides the following information:
-
-### Slope values
-
-```{r}
-new <- coef(summary(final))[3:17]
-
-pred_lmer <- data.frame(Species=c(species_list[2:16]),
-                        "Gradient"=c(new))
-
-kable(pred_lmer)
-
-#BLUE WHITING??
-```
-
-### Density of residuals
+Separating the density of residuals plot out over the predator species gives:
 
 ```{r}
 renamed_df %>% 
@@ -1188,12 +1207,19 @@ renamed_df %>%
   theme(legend.position="none")
 ```
 
+DESCRIBE HOW THE RESIDUALS LOOK
+
+
 ## Comparisons for Mackerel {.tabset}
+
+We now look at specific plots for Mackerel which allow us to make some conclusions about the feeding preferences of the species Mackerel.
+
+```{r}
+mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
+```
 
 ### Distribution of prey types
 ```{r}
-mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
-
 ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
    geom_bar_pattern(stat = "count",
                     pattern_color = "white",
@@ -1203,12 +1229,16 @@ ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
   labs(x="Prey type", y="Number of Observations")
 ```
 
+Mackerel mostly eat Zooplankton and prey belonging to the group `other'.
+
 ### Density of lppmr observations
 ```{r}
 ggplot(mackerel_df, aes(x=lppmr)) +
   geom_density(aes(weight = no._prey_per_stmch), color="lightseagreen") +
   labs(x="log(PPMR)", y="Number density of observations")
 ```
+
+Mackerel have a wide distribution of $\log$(PPMR) values, suggesting that there is a wide range of prey masses consumed by predator.
 
 ### Density plot of the residuals 
 ```{r}
@@ -1219,5 +1249,5 @@ mackerel_df %>%
   theme_classic()
 ```
 
-
+The residuals are fairly widely distributed. This means that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out, and therefore there is a wide distribution of $\log$(PPMR) values across the species Mackerel. This then suggests that a predator such as Mackerel feeds on a wide distribution of prey masses.
 
