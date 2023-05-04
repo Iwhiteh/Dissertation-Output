@@ -740,7 +740,8 @@ ggplot(BlueW_model, aes(x = .fitted, y = .resid)) +
   labs(title='Plot of the residuals against the fitted values: Blue Whiting',
        x='Fitted values of log(PPMR)', y='Residuals') +
   geom_smooth() + 
-  theme_classic()
+  theme_classic() +
+  theme(plot.title = element_text(size=15))
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 #.resid creates a list of the residuals of each individual data point
 ```
@@ -834,33 +835,11 @@ This plot is very difficult to interpret, and the relationship between the $\log
 
 ### First trial
 
+Here, there is the same slope for every predator species, but each species group has a different y-intercept (i.e. the line for each predator species group crosses the $\log$(predator mass)=0 line at a different value for $\log$(PPMR)). This information is shown in the table and the plot below.
+
 Fixed effects: $\log$(predator mass)
 
 Random effects: year (fixed slopes and random intercepts)
-
-```{r first}
-one <- lmer(lppmr ~ lpred_weight + (1|year), data = renamed_df, REML=FALSE)
-#same slope for every predator species, but varying intercept
-
-year_list <- c(sort(unique(renamed_df$year)))
-year_list_2000 <- year_list[c(year_list>2000)]
-#a vector only including the values for year which are greater than 2000
-
-one_df <- data.frame(Year=c(year_list),
-                        "Slope"=c(coef(one)$year[2]))
-one_df <- one_df %>% transmute(Year, Slope=lpred_weight) 
-one_df <- one_df[one_df$Year %in% year_list_2000, ]
-kable(one_df)
-#This outputs the intercept term for each predator species for the fitted model, and only for values where the year is after 2000
-
-plot_model(one, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
-           show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects: Intercepts - Model 1') + 
-        xlim(factor(year_list_2000))
-#Plots a model of the estimated values of the random effects variable
-```
-
-Here, there is the same slope for every predator species, but each species group has a different y-intercept (i.e. the line for each predator species group crosses the $\log$(predator mass)=0 line at a different value for $\log$(PPMR)). These values are only approximated, and the plot shows that
 
 This is mathematically represented by:
 
@@ -879,27 +858,43 @@ Where:
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
+```{r first}
+one <- lmer(lppmr ~ lpred_weight + (1|year), data = renamed_df, REML=FALSE)
+#same slope for every predator species, but varying intercept
+```
+
+```{r}
+year_list <- c(sort(unique(renamed_df$year)))
+year_list_2000 <- year_list[c(year_list>2000)]
+#a vector only including the values for year which are greater than 2000
+
+one_df <- data.frame(Year=c(year_list),
+                        "Slope"=c(coef(one)$year[2]))
+one_df <- one_df %>% transmute(Year, Slope=lpred_weight) 
+one_df <- one_df[one_df$Year %in% year_list_2000, ]
+#This outputs the intercept term for each predator species for the fitted model, and only for values where the year is after 2000
+```
+REMOVE THE NUMBERS FROM THE SIDE
+
+This table shows a sample of the estimated slope values for the years between 2001-2016. We can see that each year has the same value of slope.
+
+```{r}
+plot_model(one, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects: Intercepts - Model 1') + 
+        xlim(factor(year_list_2000))
+#Plots a model of the estimated values of the random effects variable
+```
+
+This is a plot describing [].
+
+We can see that the y-intercepts of this mixed effects model are randomly distributed round some central value, and that this y-intercept varies across the years.
+
 ### Second trial
 
 Fixed effects: $\log$(predator mass)
 
 Random effects: year (random slope and fixed intercept)
-
-```{r second}
-two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|year), data = renamed_df, REML=FALSE)
-#(0+ | ) means that the slope of the graph is different for each predator species, but they each group has the same intercept
-
-two_df <- data.frame(Year=c(year_list),
-                        "Intercept"=c(coef(two)$year[1]))
-two_df <- two_df %>% transmute(Year, Intercept=X.Intercept.) 
-two_df <- two_df[two_df$Year %in% year_list_2000, ]
-kable(two_df)
-
-plot_model(two, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
-           show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects: Slope - Model 2') + 
-        xlim(factor(year_list_2000))
-```
 
 This is mathematically represented by:
 
@@ -918,23 +913,37 @@ Where:
 (where $\alpha_{1y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[10]}$ (i.e. $\alpha_{1y} \sim (0, \sigma^2_{A[10]})$)).
 * $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
+```{r second}
+two <- lmer(lppmr ~ lpred_weight + (0 + lpred_weight|year), data = renamed_df, REML=FALSE)
+#(0+ | ) means that the slope of the graph is different for each predator species, but they each group has the same intercept
+```
+
 For this plot, the value of log(predator mass) is modelled to be dependent on the year that each observation is taken. This allows us to have lines for each unique year which all have the same intercept but differing slopes.
+
+```{r}
+two_df <- data.frame(Year=c(year_list),
+                        "Intercept"=c(coef(two)$year[1]))
+two_df <- two_df %>% transmute(Year, Intercept=X.Intercept.) 
+two_df <- two_df[two_df$Year %in% year_list_2000, ]
+kable(two_df)
+```
+
+We can see from this table that every group for year has the same value for its y-intercept.
+
+```{r}
+plot_model(two, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects: Slope - Model 2') + 
+        xlim(factor(year_list_2000))
+```
+
+However, the slope is randomly distributed for each year group, and is unique for each group of year.
 
 ### Third trial
 
 Fixed effects: $\log$(predator mass)
 
 Random effects: year (random slope and random intercept)
-
-```{r third}
-three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
-#Random intercept and random slope (correlated)
-
-plot_model(three, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
-           show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects - Model 3') + 
-        xlim(factor(year_list_2000))
-```
 
 This is mathematically represented by:
 $$
@@ -953,7 +962,19 @@ Where:
 * $\alpha_{1y}$ is the slope term that's dependent on the random effect (the year)
 * $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
-From the table, we can see this model features slopes and intercepts that are different for each year are different.
+```{r third}
+three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|year), data = renamed_df, REML=FALSE)
+#Random intercept and random slope (correlated)
+```
+
+```{r}
+plot_model(three, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
+           show.values=T, value.offset=.3) + 
+        labs(x='Year', y='Value', title='Random effects - Model 3') + 
+        xlim(factor(year_list_2000))
+```
+
+From the table, we can see that this model features slopes and intercepts that are unique for each individual year.
 
 ### Comparing the models
 
@@ -1125,9 +1146,9 @@ anova(a,b,c)
 
 The BIC value is the smallest when all three random effects are considered, and the residuals for this three-random-effect model look the most similar to a normal distribution. Therefore, we will choose to use a model which uses all three random effects for further analysis. 
 
-## Mixed effects model - over all species
+##  Mixed effects model - over all species {.tabset}
 
-The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Mackerel). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
+The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Mackerel). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), and a fixed effect of predator species to allow us to make individual analysis for each unique predator species.
 
 ```{r final model}
  final <- lmer(lppmr ~ lpred_weight + pred_species + 
@@ -1137,6 +1158,8 @@ The third model (with ship name, year and location as random effects) appears to
 
 summary(final)
 ```
+
+### Mathematical representation
 
 Mathematical representation:
 $$
@@ -1186,6 +1209,8 @@ So,
 * Fixed effects: $\log$(predator mass), predator species
 * Random effects: ship name, year, ices_rectangle
 
+### Values of the model
+
 This model has the following variables:
 
 Variable name |  Meaning            | Value   
@@ -1221,15 +1246,19 @@ Sole            | 0.6118634430
 Sprat           | 0.9023672482   
 Whiting         | -0.4030090827 
 
-BLUE WHITING??
+### QQplot
+
+As seen in Section 8.3, a QQplot discusses whether or not the residuals of this model are normally distributed. In order to fit a mixed effects model, we must have an approximately linear relation between the two axes.
 
 ```{r}
-qqnorm(resid(final),xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+qqnorm(resid(final), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - final mixed effect model")
 qqline(resid(final), col="blue")
 ```
 
-???
+We see that the points generally lie close to this 45 degree line, although some extremely small or large residuals are not completely aligned. Due to this fairly close alignment, we can therefore claim that this suggests a normal distribution of residuals.
+
+### Density of residuals
 
 ```{r}
 renamed_df %>% 
@@ -1243,9 +1272,9 @@ renamed_df %>%
   scale_linetype_manual(values = c("solid", "dashed"))
 ```
 
-???
+Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals,
 
-## Separated by predator species - Density of residual
+### Separated by predator species
 
 Separating the density of residuals plot out over the predator species gives:
 
