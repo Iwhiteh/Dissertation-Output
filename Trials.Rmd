@@ -872,23 +872,28 @@ one_df <- data.frame(Year=c(year_list),
                         "Slope"=c(coef(one)$year[2]))
 one_df <- one_df %>% transmute(Year, Slope=lpred_weight) 
 one_df <- one_df[one_df$Year %in% year_list_2000, ]
+
+rownames(one_df) <- NULL
+#This removes the numbers associated with each row to make the output neater
+
+kable(one_df)
 #This outputs the intercept term for each predator species for the fitted model, and only for values where the year is after 2000
 ```
-REMOVE THE NUMBERS FROM THE SIDE
 
 This table shows a sample of the estimated slope values for the years between 2001-2016. We can see that each year has the same value of slope.
 
 ```{r}
 plot_model(one, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
            show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects: Intercepts - Model 1') + 
+        labs(x='Year', y='Value of random effect', 
+             title='Random effects: Intercepts - Model 1') + 
         xlim(factor(year_list_2000))
-#Plots a model of the estimated values of the random effects variable
+#For a mixed effects model, using type="re" then plots the estimated values of the random effects
 ```
 
-This is a plot describing [].
+This is a plot showing the estimated mean values of the random effects, and how they are approximately distributed.
 
-We can see that the y-intercepts of this mixed effects model are randomly distributed round some central value, and that this y-intercept varies across the years.
+So, we can see that the y-intercepts of this mixed effects model are randomly distributed round some central value, and that this y-intercept varies across the years.
 
 ### Second trial
 
@@ -925,6 +930,7 @@ two_df <- data.frame(Year=c(year_list),
                         "Intercept"=c(coef(two)$year[1]))
 two_df <- two_df %>% transmute(Year, Intercept=X.Intercept.) 
 two_df <- two_df[two_df$Year %in% year_list_2000, ]
+rownames(two_df) <- NULL
 kable(two_df)
 ```
 
@@ -933,7 +939,7 @@ We can see from this table that every group for year has the same value for its 
 ```{r}
 plot_model(two, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
            show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects: Slope - Model 2') + 
+        labs(x='Year', y='Value of random effect', title='Random effects: Slope - Model 2') + 
         xlim(factor(year_list_2000))
 ```
 
@@ -970,7 +976,7 @@ three <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|year), data = renamed_df, R
 ```{r}
 plot_model(three, type = "re", vline.color="grey", dot.size=1.1, value.size=3,
            show.values=T, value.offset=.3) + 
-        labs(x='Year', y='Value', title='Random effects - Model 3') + 
+        labs(x='Year', y='Value of random effect', title='Random effects - Model 3') + 
         xlim(factor(year_list_2000))
 ```
 
@@ -1272,7 +1278,7 @@ renamed_df %>%
   scale_linetype_manual(values = c("solid", "dashed"))
 ```
 
-Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals,
+Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals, we see that the residuals are essentially normally distributed, but with a greater density of points for which the residuals $= 0$. Therefore, this is strong evidence that the residuals are normally distributed, and hence that there is some form of linear relationship between the $\log$(PPMR) and $\log$(predator mass). This then suggests that we can these mixed effects models, and therefore that our final mathematical model is appropriate for this data set.
 
 ### Separated by predator species
 
@@ -1287,7 +1293,10 @@ renamed_df %>%
   facet_wrap(~pred_species) +
   theme(legend.position="none")
 ```
-?????
+
+For a predator which shows a very flat-looking density of residuals (such as Horse Mackerel in Figure), this means that the residuals are very scattered and display heteroscedastic behaviour. This also suggests that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out and do not show a clear linear relation. Hence, we find that there are observations with a range of $\log$(PPMR) values for each $\log$(predator mass). Transforming away from the $\log$ of the axes, we can therefore claim that predators with a flat-looking density of residuals have many values of PPMR for a each predator mass. 
+
+This then suggests that these predators consume based on a wide range of PPMRs, and thus that they consume prey of a wide distribution of masses.
 
 ## Comparisons for Mackerel {.tabset}
 
@@ -1298,6 +1307,7 @@ mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
 ```
 
 ### Distribution of prey types
+
 ```{r}
 ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
    geom_bar_pattern(stat = "count",
@@ -1311,6 +1321,7 @@ ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
 Mackerel mostly eat Zooplankton and prey belonging to the group `other'.
 
 ### Density of lppmr observations
+
 ```{r}
 ggplot(mackerel_df, aes(x=lppmr)) +
   geom_density(aes(weight = no._prey_per_stmch), color="lightseagreen") +
@@ -1320,6 +1331,7 @@ ggplot(mackerel_df, aes(x=lppmr)) +
 Mackerel have a wide distribution of $\log$(PPMR) values, suggesting that there is a wide range of prey masses consumed by predator.
 
 ### Density plot of the residuals 
+
 ```{r}
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
@@ -1329,4 +1341,3 @@ mackerel_df %>%
 ```
 
 The residuals are fairly widely distributed. This means that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out, and therefore there is a wide distribution of $\log$(PPMR) values across the species Mackerel. This then suggests that a predator such as Mackerel feeds on a wide distribution of prey masses.
-
