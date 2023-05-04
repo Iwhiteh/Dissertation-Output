@@ -154,11 +154,15 @@ We can see that some predators eat a range of prey types (e.g. Whiting), while o
 # Distribution of prey masses
 
 ```{r lprey density}
-ggplot(renamed_df, aes(x=lprey_weight)) +
-  geom_density(aes(weight = no._prey_per_stmch), color="red") +
+ggplot(renamed_df, aes(x=lprey_weight, colour=pred_species)) +
+  geom_density(aes(weight = no._prey_per_stmch)) +
   labs(title = "Density of log(prey mass) observations", x="log(prey mass)", 
       y="Number density of observations") + 
-  facet_wrap(~pred_species, scale="free_y")   
+  facet_wrap(~pred_species, scale="free_y") +
+  theme(legend.position="none")
+
+#colour=pred_species means that each plot (as separated over individual species) is differently coloured
+#theme(legend.position="none") means there is no 'key' printed next to the plots to explain what each plot represents
 ```
 
 This plot shows that different predator species consume differently sized distributions of prey. For example, some species have a 'peak' at roughly a single size of prey (such as Horse Mackerel and Norway Pout), and some species show a wider range of prey masses which they consume, such as:
@@ -326,13 +330,14 @@ This graph is plotted over the entire data set and includes values from all of t
 ## Prey v. predator mass plot, separated by predator species
 
 ```{r sep by pred species, message=FALSE}
-ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) + 
+ggplot(data = renamed_df, aes(lpred_weight, lprey_weight, colour=pred_species)) + 
   labs(title = "log(prey mass) v. log(predator mass), separated by predator species", 
        x="log(predator mass)", y="log(prey mass)") +
-  geom_point(size=0.01, colour="red") + 
+  geom_point(size=0.01) + 
   facet_wrap(~pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 10)) +
-  geom_smooth(method='lm', colour="black")
+  geom_smooth(method='lm', colour="black") +
+  theme(legend.position="none")
 
 #the grey bands around the lines of best fit represent the standard error of this line
 ```
@@ -390,12 +395,13 @@ Here, we are looking for the most common log(PPMR) value for each individual spe
 These plots are weighted by the prey biomass. This means that we are looking at the distribution of prey biomass across values of log(PPMR), so observations are counted up according to their biomass. This means that a single observation which includes prey of a large biomass will represent a large density, and a single observation of prey of a small biomass will be shown as having a small density,
 
 ```{r ave PPMR biomass}
-ggplot(data = renamed_df, aes(x=lppmr)) + 
+ggplot(data = renamed_df, aes(x=lppmr, colour=pred_species)) + 
   labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
        x="log(PPMR)", y="Biomass density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = prey_weight_g), colour="red")
+  geom_density(aes(weight = prey_weight_g)) +
+  theme(legend.position="none")
 
 #using facet_wrap for the variable (pred_species) means the data is separated into individual plots for each predator species
 #geom_density means area under the curve = 1 (i.e. the graph is normalised)
@@ -407,12 +413,13 @@ ggplot(data = renamed_df, aes(x=lppmr)) +
 These plots are weighted by the number pf prey per observation. This means that data points with a larger number of prey per observation are prioritised/weighted more than those with a smaller number of prey per observation.
 
 ```{r ave PPMR prey no.}
-ggplot(data = renamed_df, aes(x=lppmr)) + 
+ggplot(data = renamed_df, aes(x=lppmr, colour=pred_species)) + 
   labs(title = "Density plot of log(PPMR), weighted by number density of prey", 
        x="log(PPMR)", y="Number density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
   theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = no._prey_per_stmch), colour="green")
+  geom_density(aes(weight = no._prey_per_stmch)) +
+  theme(legend.position="none")
 
 #weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per observation
 ```
@@ -552,12 +559,13 @@ So, we can continue with the assumption that there is a difference in the mean o
 ## Plotting PPMR against predator mass, separated by predator species
 
 ```{r pred mass v. PPMR, message=FALSE}
-ggplot(data=renamed_df, aes(lpred_weight, lppmr)) + 
-  geom_point(size=0.001, colour="cornflowerblue") +
+ggplot(data=renamed_df, aes(lpred_weight, lppmr, colour=pred_species)) + 
+  geom_point(size=0.001) +
   labs(title = "log(PPMR) v. log(predator mass) plot", 
        x="log(Predator mass)", y="log(PPMR)") + 
   stat_smooth (method='lm', colour="black") + 
-  facet_wrap(~pred_species, scale="free_y")
+  facet_wrap(~pred_species, scale="free_y") +
+  theme(legend.position="none")
 ```
 
 Graphing $\log$(predator mass) v. $\log$(PPMR) for individual predator species to see if the predator mass related to the PPMR. 
@@ -575,7 +583,19 @@ $$
 
 (where $c = \log(D)$)
 
-To prove that log(predator mass) is not related to the log(PPMR), we want the two to not be proportional and hence we are looking for slope, $m = 0$. This would mean that the PPMR is independent of the predator mass for a certain species (as assumed).
+To prove that $\log$(predator mass) is related to the $\log$(PPMR), we want the two to be proportional in some way and hence we are looking for slope, $m = \pm 1$ for a linear relationship. This would then mean
+
+$$
+    \log(\text{PPMR}) \propto m * \log(\text{predator mass})
+$$
+
+And therefore
+
+$$
+    \text{PPMR} \propto (\text{predator mass})^m
+$$
+
+since $\log$ is simply a function applied to the axes. Therefore, a gradient of $\pm 1$ represents a linear relationship, and a gradient $\neq 0$ means there is some dependency between the PPMR and predator mass (as expected).
 
 ```{r ppmrvp gradients}
 j <- 1
@@ -601,7 +621,9 @@ ppmrvp_grads <- data.frame("Predator_species"=c(species_list),
 kable(ppmrvp_grads)
 ```
 
-$\pm$ their standard error, the species Megrim, Norway Pout, Poor Cod have a gradient equal to $0$ (to 1 significant figure). This is not many of the possible species,, so we have not supported the idea that the assumption of independence between the $\log(\text{PPMR})$ and $\log(\text{predator mass})$ can be upheld for this data set.
+13 out of the possible 16 predator species have a gradient $\neq 0$, and therefore this data is very supportive of there being some level of dependence between the PPMR and predator mass.
+
+However, not every predator species has a gradient $\neq 0$ ($\pm$ (their standard error), the species Megrim, Norway Pout, Poor Cod have a gradient equal to $0$ (to 1 significant figure)). We are also ideally looking for a gradient of $\pm 1$ to show a linear relationship. Therefore, we will continue to investigate this relationship with different plots.
 
 ## Different weightings of the line of best fit
 
@@ -671,14 +693,14 @@ We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\
 
 `Heteroscedasticity' is when the residuals (error terms) are unequally scattered. However, residuals with a constant variance will show a density that is approximately normally distributed. Therefore, if residuals do not show a normal distribution (and instead show heteroscedasticity), then it is unclear whether or not the method of a linear relationship is appropriate to fit the data set.
 
-For the arbitrarily selected predator species Herring, we get the following plots which all discuss the idea of normally distributed residuals.
+For the arbitrarily selected predator species Blue Whiting, we get the following plots which all discuss the idea of normally distributed residuals.
 
-```{r Herring info,  message=FALSE}
-herring_df <-  renamed_df %>% filter(pred_species == fixed("Herring"))
+```{r Blue Whiting info,  message=FALSE}
+BlueW_df <-  renamed_df %>% filter(pred_species == fixed("Blue Whiting"))
 
-herring_model <- lm(lppmr ~ lpred_weight, data=herring_df) 
-res <- resid(herring_model)
-predicted <- predict(herring_model)
+BlueW_model <- lm(lppmr ~ lpred_weight, data=BlueW_df) 
+res <- resid(BlueW_model)
+predicted <- predict(BlueW_model)
 #lm() fits a regression models for log(PPMR) against log(predator mass)
 #resid() creates a list of the residual of each individual data point
 #predict() gives the predicted value of a data point by using the previous behaviour and patterns of the data to determine possible future values
@@ -687,13 +709,13 @@ predicted <- predict(herring_model)
 ### With residuals of each point to the predicted values of each point
 
 ```{r residual to points, message=FALSE}
-ggplot(herring_df, aes(x = lpred_weight, y = lppmr)) +
+ggplot(BlueW_df, aes(x = lpred_weight, y = lppmr)) +
   geom_smooth(method = "lm", se = FALSE, colour="black") +  
   geom_segment(aes(xend = lpred_weight, yend = predicted), colour="red", size=0.1) +
   geom_point(size=0.5) +
   labs(title='The log(predator mass) against log(PPMR) graph, 
-       with lines from the individual points to the line of best fit: Herring', 
-       x='log(predator mass)', y='log(PPMR)')
+       with lines from the individual points to the line of best fit: Blue Whiting', 
+       x='log(predator mass)', y='log(PPMR)') 
 #showing the residuals of each point to the line of best fit
 #geom_smooth() creates the regression line of the regression model from lm()
 #geom_segment() draws a line from each point to the regression line 
@@ -705,75 +727,79 @@ $$
 $$
 where the predicted/fitted value is equal to the value as predicted by the line of best fit.
 
-In order to display a linear relationship between the axes, we would expect that the residuals of this plot would be normally distributed. This would meant that the data points are equally scattered around the line of best fit, and therefore the two axes would show linearity.
+It is difficult to understand how the residuals are distributed from this plot, so instead we will consider plots of the residuals against the fitted values, of the density of the residuals and of a QQPlot.
 
 ### Residuals v. fitted values
 
-To further investigate this linearity, we plot the residuals (as calculated from the linear model) against the fitted values as predicted by the line of best fit.
+To further investigate this linearity, we plot the residuals (as calculated from the linear model) against the fitted values of $\log$(PPMR) as predicted by the linear model being fitted to the data.
 
 ```{r residuals v. fitted values, message=FALSE}
-ggplot(herring_model, aes(x = .fitted, y = .resid)) +
+ggplot(BlueW_model, aes(x = .fitted, y = .resid)) +
   geom_point(colour="red", size=0.5) +
   geom_hline(yintercept = 0, colour="grey") +
-  labs(title='Plot of the residuals against the fitted values: Herring',
-       x='Fitted Values', y='Residuals') +
+  labs(title='Plot of the residuals against the fitted values: Blue Whiting',
+       x='Fitted values of log(PPMR)', y='Residuals') +
   geom_smooth() + 
   theme_classic()
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 #.resid creates a list of the residuals of each individual data point
 ```
 
+This plot is used to detect unequal residual variances and any anomalous points. A linear model will show a roughly equal distribution of residuals across the fitted values, meaning that the residuals are equally far from the line of best fit across all fitted values.
 
-This graph plots the residual of each observation against its fitted value (as predicted by the line of best fit). This plot is used to detect unequal residual variances and any anomalous points. 
+Plotting this relationship for the species Blue Whiting shows that the residuals are approximately evenly distributed across all the fitted values of $\log$(PPMR). This suggests that the residuals are normally distributed, which is compelling evidence for a linear relationship between $\log$(PPMR) and $\log$(predator mass).
 
-We can see that the residuals generally increase in value as the fitted values increase, which suggests that the residuals are potentially not normally distributed.
+### QQplot
 
-### Density of residuals
-
-```{r density of residuals, message=FALSE}
-ggplot(herring_model, aes(x = .resid)) +
-  geom_density(colour="red") +
-  labs(title='Density plot of the residuals: Herring', x='Residuals', y='Density') +
-  theme_classic()
-
-#plots the density of the residuals of the lppmr v lpred mass graph for Herring
-```
-
-By plotting the density of the residuals, we can see that for the predator species Herring the residuals do not look normally distributed. This suggests that the residuals are unequally scattered, and hence we continue with the idea that $\log{(\text{PPMR})}$ and $\log{(\text{predator mass})}$ are independent of each other because there appears to be no normal distribution of residuals and thus no linearity between the axes.
-
-### qqplot
+A QQplot (quantile-quantile plot) shows if two data sets come from the same distribution. For this data set, we plot the actual residuals against the expected residuals if the residuals were normally distributed. The points on this graph should fall on the straight line (at a 45 degree angle), as this is what we would expect for normally distributed residuals.
 
 ```{r qqplot, message=FALSE}
 qqnorm(res, xlab = "Theoretical Residuals", ylab = "Sample Residuals",
-       main="Normal Q-Q plot of residuals - for the species Herring")
+       main="Normal Q-Q plot of residuals - for the species Blue Whiting")
 qqline(res, col="blue")
 #plot a Q-Q plot to determine if the residuals follow a normal distribution
 #for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
 ```
 
-Laslty, a qqplot (quantile-quantile plot) shows if two data sets come from the same distribution. For this data set, we plot the actual residuals against the expected residuals if the residuals were normally distributed. The points on this graph should fall on the straight line (at a 45 degree angle), and if they don't then the residuals do not appear to be normally distributed.
+We can see that these points fall along the 45 degree-angled line fairly strongly, and therefore we have fairly strong evidence for normally distributed residuals. However, there is some variation from this 45 degree line for especially small and large residuals, which suggests that these residuals are not perfectly normally distributed.
 
-We can see that these points roughly fall along the 45 degree-angled line, but not strongly and therefore we can claim that this is not evidence for normally distributed residuals. 
+### Density of residuals
 
-Therefore, all previous graphs support the idea that the residuals show heteroscedasticity (meaning that they are unequally scattered), hence the residuals are not normally distributed. This means we do not have significant supporting evidence that the two axes are linearly related, and therefore we can claim that the $\log$(PPMR) and $\log$(predator mass) in fact are independent of each other.
+By plotting the density of the residuals, we see how frequently different residuals occur in this model. Normally distributed residuals suggest there is a linear relationship between the axes because the residuals are mostly clustered around $= 0$ and therefore the data points lie close to the line of best fit. However, unequally scattered residuals (known as `heteroscedasticity') suggest that there is little or no relation between the two axes (here, the $\log$(PPMR) and the $\log$(predator mass)) and that therefore a linear relationship is not appropriate to fit the data set to.
+
+```{r density of residuals, message=FALSE}
+ggplot(BlueW_model, aes(x = .resid)) +
+  geom_density(colour="red") +
+  labs(title='Density plot of the residuals: Blue Whiting', x='Residuals', y='Density') +
+  theme_classic()
+
+#plots the density of the residuals of the lppmr v lpred mass graph for Herring
+```
+
+For observations from the predator species of Blue Whiting, we can see that the density of residuals looks approximately normally distributed, with a `peak' near the centre and densities which trail off towards $0$ either side of this peak. We can therefore claim that this normal distribution suggests a linear relation between the $\log$(PPMR) and the $\log$(predator mass), and therefore that the PPMR and predator mass are dependent on each other in some manner.
+
+However, this plot shows two clear peaks, located at roughly $-1.5$ and $1$, which is not expected of a normal distribution curve. This is potentially indicative of some source of variance in the data which is creating two peaks instead of one. To investigate this variance, we choose to plot mixed effects models (as discussed later in Section 9).
 
 ## Residual plots for the individual predator species
+
+This is a histogram plot of the residuals of the plot, separated for each predator species. As discussed earlier, a normal distribution of the density of residuals would suggest that the data fits a linear model. This would then infer that the axes would be related to one another.
 
 ```{r applying residual plots, message=FALSE}
 model<- lm(lppmr~lpred_weight, data=renamed_df) 
 
-ggplot(model, aes(x = .resid)) + 
-  geom_density(colour="red") + 
+ggplot(model, aes(x = .resid, color=renamed_df$pred_species)) + 
+  geom_density() + 
   facet_wrap(~renamed_df$pred_species, scales = "free_y") +
-  labs(title="Density plot of the residuals", x='Residuals', y='Density')
+  labs(title="Density plot of the residuals", x='Residuals', y='Density') +
+  theme(legend.position="none")
 #Plotting the density of the residuals for each predator species
 ```
 
-This is a histogram plot of the residuals of the plot, separated for each predator species. As discussed earlier, a normal distribution of the density of residuals would suggest that the data fits a linear model. This would then infer that the axes would be related to one another.
+From these plots, we can see that most of the species show roughly a normal distribution of residuals, with a strong centrally located `peak' and densities which tail slowly down to $0$ at either side of this peak. This then suggests that the data set can be linearly modelled.
 
-However, none of the predator species produce a density plot which looks convincingly normally distributed. Therefore, we can say that this data suggest that the PPMR and predator mass are independent of one another when modelling using a linear model. This also suggests that using a linear model (where we approximate $y=mx +c$) is not appropriate for this set of data.
+However, similar to Blue Whiting, many of these predator species show multiple peaks in their densities. Therefore, we can suggest that there is some amount of variance in the data set which causes this multiple-peak behaviour.  
 
-Instead, we use a different model (a mixed effects model) to fit this data set to in order to attempt to more accurately approximate certain parameters in the variable relationships.
+To continue this analysis, we use a different model (a mixed effects model) to fit this data set to in order to more accurately approximate certain parameters in the variable relationships (and to account for some variance caused by certain factors in the data set).
 
 # Introducing a mixed effects model
 
@@ -1101,7 +1127,7 @@ The BIC value is the smallest when all three random effects are considered, and 
 
 ## Mixed effects model - over all species
 
-The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Herring). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
+The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Mackerel). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), but we also introduce a fourth random effect of predator species.
 
 ```{r final model}
  final <- lmer(lppmr ~ lpred_weight + pred_species + 
