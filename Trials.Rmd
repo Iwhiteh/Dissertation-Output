@@ -89,7 +89,7 @@ renamed_df = df %>%
 #Renaming the predator species from their latin names (e.g. Gadus morhua) to their more common names (e.g. Cod)
 #Creates a new data frame (called 'renamed_df') with these replaced names
 
-species_list <- c("Boarfish", "Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
+species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
                      "Horse Mackerel", "Mackerel", "Megrim", "Monkfish", "Norway Pout",
                       "Plaice", "Poor Cod", "Sole", "Sprat", "Whiting")
 #Creates an alphabetically arranged array called 'species_list', which is list of the predator species we are focusing on in this project
@@ -1054,6 +1054,16 @@ And:
 * Random effects: ship name
 
 ```{r}
+qqnorm(resid(a), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
+       main="Normal Q-Q plot of residuals - mixed effect model with ship name")
+qqline(resid(a), col="blue")
+```
+
+We have plotted a qqplot which shows the actual residuals (calculated from the data set) plotted against the expected residuals if they were completely normally distributed. If the residuals are perfectly normally distributed, then the points should fall on the straight line which is at a 45 degree angle.
+
+We can see that the points fall roughly on the straight line but not completely, and therefore the data set does not very accurately fit to the model.
+
+```{r}
 mackerel_df %>% 
   ggplot(aes(x = resid(a))) +
   geom_density(colour="blue") +
@@ -1065,17 +1075,7 @@ mackerel_df %>%
 #The residuals are found by subtracting the fitted from the predicted values
 ```
 
-We can plot the density of the residuals of this model. Normally distributed residuals suggests that the residuals have a constant variance and hence the axes are related in some way.
-
-```{r}
-qqnorm(resid(a), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
-       main="Normal Q-Q plot of residuals - mixed effect model with ship name")
-qqline(resid(a), col="blue")
-```
-
-We have also plotted a qqplot which shows the actual residuals (calculated from the data set) plotted against the expected residuals if they were completely normally distributed. If the residuals are perfectly normally distributed, then the points should fall on the straight line which is at a 45 degree angle.
-
-We can see that the points fall roughly on the straight line but not completely, and therefore the data set does not very accurately fit to the model.
+We can also plot the density of the residuals of this model. Normally distributed residuals suggests that the residuals have a constant variance and hence the axes are related in some way.
 
 ### With year
 
@@ -1106,7 +1106,7 @@ And:
 
 ```{r}
 qqnorm(resid(b), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
-       main="Normal Q-Q plot of residuals - mixed effect model with ship name and year")
+       main="Normal Q-Q plot of residuals - with ship name and year")
 qqline(resid(b), col="red")
 ```
 
@@ -1115,9 +1115,11 @@ mackerel_df %>%
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
   labs(title='Density plot of the residuals for the model with ship name and year
-                as random effects: Mackerel', x='Residuals', y='Density') + 
+                as random effects', x='Residuals', y='Density') + 
   theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
+
+We see that the points lie closer to the expected 45 degree line in the QQPlot and the residuals appear slightly more clustered around a central point. This is all suggestive of this model fitting in a more preferable way.
 
 ### With location
 
@@ -1148,19 +1150,22 @@ And:
 
 ```{r}
 qqnorm(resid(c), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
-       main="Normal Q-Q plot of residuals - mixed effect model with ship name, 
-              year, and location")
+       main="Normal Q-Q plot of residuals - with ship name, year, and location")
 qqline(resid(c), col="green")
 ```
+
+For this third model which uses all three random effects, the observations lie fairly strongly on this 45 degree line. There is some movement away from the line, especially at very small and very large values of the theoretical residuals. However, this is the most compelling QQplot we have seen, and therefore suggests that using all three random effects gives the most normally distributed set of residuals.
 
 ```{r}
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
   geom_density(colour="green") +
   labs(title='Density plot of the residuals for the model with ship name, year, 
-                and location as random effects: Mackerel', x='Residuals', y='Density') + 
+                and location as random effects', x='Residuals', y='Density') + 
   theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
+
+We can also see that the density of residuals graphs looks very similar to a normally distributed graph. Therefore, using the three random effects of ship name, year, and location produces the most well-fitting model for this data set.
 
 ### Comparing
 
