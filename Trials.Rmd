@@ -40,11 +40,14 @@ load("stomach_dataset.Rdata")
 
 df <- stom_df %>% 
   transmute(haul_id, ices_rectangle, year, pred_species, 
-                            pred_weight_g, pred_length_cm, prey_weight_g, 
-                            prey_type = prey_funcgrp, indiv_prey_weight = prey_ind_weight_g, 
+                            pred_weight_g,  prey_type = prey_funcgrp, 
+                            total_prey_weight = prey_weight_g, 
                             prey_count, n_stomachs, 
-                            no._prey_per_stmch = prey_count/n_stomachs, ppmr) 
-#creating a new data set called 'df' which only contains certain selected columns
+                            no._prey_per_stmch = prey_count/n_stomachs,
+                            indiv_prey_weight = prey_ind_weight_g, 
+                            ppmr) 
+
+#creating a new data frame called 'df' which only contains certain selected columns
 ```
 
 ```{r correcting and adjusting the df, message=FALSE}
@@ -86,10 +89,10 @@ renamed_df = df %>%
 #Renaming the predator species from their latin names (e.g. Gadus morhua) to their more common names (e.g. Cod)
 #Creates a new data frame (called 'renamed_df') with these replaced names
 
-species_list <- c("Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
+species_list <- c("Boarfish", "Blue Whiting", "Cod", "Common Dab", "European Hake", "Haddock", "Herring",
                      "Horse Mackerel", "Mackerel", "Megrim", "Monkfish", "Norway Pout",
                       "Plaice", "Poor Cod", "Sole", "Sprat", "Whiting")
-#Creates an array called 'species_list', which is list of the predator species we are focusing on in this project
+#Creates an alphabetically arranged array called 'species_list', which is list of the predator species we are focusing on in this project
 
 renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 #Removes any observations of predator species not in the species_list, i.e. they are irrelevant data points for this project
@@ -97,14 +100,14 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
 # Introduction
 
-This data set is formed from recordings taken by multiple ships between the years 1886-2016.
+This data set is formed from recordings taken by multiple ships between the years 1886-2016. We chose to focus on 16 predator species, as these are the same species analysed in a Mizer model which this project will feed into. It is important to note that the Mizer model also includes the predator species `Boarfish', however, there are a very limited number of observations for this species in the provided data set, so any analysis of Boarfish cannot be relied upon.
 
 Fish were taken from some location, and their individual stomach contents recorded. Prey of (roughly) the same size found in a single predator's stomach were recorded as part of a single observation. This gives the number of prey that make up a single observation for some single predator stomach, and is called 'no._prey_per_stmch'.
 
-Using similar logic,'prey_weight_g' is the total weight of prey in a single observation, and 'indiv_prey_weight' is then the approximate weight of one single prey individual found in the stomach, found using:
+Using similar logic,'total_prey_weight' is the total weight of prey in a single observation, and 'indiv_prey_weight' is then the approximate weight of one single prey individual found in the stomach, found using:
 
 $$
-  \text{indiv_prey_weight} = \frac{\text{prey_weight_g}}{\text{no._prey_per_stmch}}
+  \text{indiv_prey_weight} = \frac{\text{total_prey_weight}}{\text{no._prey_per_stmch}}
 $$
 
 There are some other column names which are useful to note:
@@ -130,7 +133,8 @@ ggplot(renamed_df, aes(x=prey_type, fill=prey_type)) +
   facet_wrap(~renamed_df$pred_species, scale="free_y") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
   labs(title = "Distribution of prey types for each predator species", x="Prey type",
-       y="Number of observations")
+       y="Number of observations") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
  
 #geom_bar_pattern() creates a bar chart from the specified data, where each category has a different pattern used to fill it
 #Using different patterns as well as different colours to fill the bars ensures the data can be understood if looked at in grey scale, and makes the document accessible for colour blind people
@@ -159,7 +163,8 @@ ggplot(renamed_df, aes(x=lprey_weight, colour=pred_species)) +
   labs(title = "Density of log(prey mass) observations", x="log(prey mass)", 
       y="Number density of observations") + 
   facet_wrap(~pred_species, scale="free_y") +
-  theme(legend.position="none")
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 #colour=pred_species means that each plot (as separated over individual species) is differently coloured
 #theme(legend.position="none") means there is no 'key' printed next to the plots to explain what each plot represents
@@ -183,7 +188,8 @@ renamed_df$haul_id_short <- gsub("_", "", renamed_df$haul_id_short)
 ggplot(data = renamed_df, aes(lprey_weight, no._prey_per_stmch)) + 
       labs(title = "Number of prey per predator stomach v. log(prey mass) ", 
        x="log(prey mass)", y="Number of prey per predator stomach") + 
-      geom_point(size=0.5)
+      geom_point(size=0.5) +
+      theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 #geom_point() adds individual points which show individual recorded points
 #size=0.5 defines the size of each point on this graph
@@ -200,7 +206,8 @@ ggplot (data = renamed_df, aes(x=lprey_weight, y=no._prey_per_stmch, color=haul_
   geom_point(size=0.02) +
   theme(strip.text = element_text(size = 7), legend.position="none", 
         plot.title = element_text(size=22), axis.title = element_text(size=22)) + 
-  facet_wrap(~renamed_df$haul_id_short, scale="free_y")
+  facet_wrap(~renamed_df$haul_id_short, scale="free_y") +
+  theme(plot.title = element_text(size=25), axis.title = element_text(size=20))
 ```
 
 Taking a closer look at some of these ships gives the plots below:
@@ -222,7 +229,8 @@ ggplot (data = interesting_haul, aes(x=lprey_weight, y=no._prey_per_stmch,
        x="log(prey mass)", y="Number of prey per observation") + 
   geom_point(size=0.02) +
   theme(strip.text = element_text(size = 10), legend.position="none") + 
-  facet_wrap(~interesting_haul$haul_id_short, scale="free_y")
+  facet_wrap(~interesting_haul$haul_id_short, scale="free_y") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
 
@@ -297,7 +305,8 @@ ggplot(data = renamed_df, aes(lpred_weight, lprey_weight)) +
   geom_hex(bins = 20) +
   scale_fill_viridis(direction=-1, option="C") +
   stat_smooth(method='lm', se=FALSE, colour="blue") +
-  theme_classic()
+  theme_classic() +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 # theme_classic() removes the grey background of the plot to make it easier to read and understand
 # stat_smooth adds a line of best fit plotted through the points
@@ -329,15 +338,18 @@ This graph is plotted over the entire data set and includes values from all of t
 
 ## Prey v. predator mass plot, separated by predator species
 
+Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
+
 ```{r sep by pred species, message=FALSE}
 ggplot(data = renamed_df, aes(lpred_weight, lprey_weight, colour=pred_species)) + 
   labs(title = "log(prey mass) v. log(predator mass), separated by predator species", 
        x="log(predator mass)", y="log(prey mass)") +
   geom_point(size=0.01) + 
   facet_wrap(~pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 10)) +
   geom_smooth(method='lm', colour="black") +
-  theme(legend.position="none")
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13), 
+        strip.text = element_text(size = 10))
 
 #the grey bands around the lines of best fit represent the standard error of this line
 ```
@@ -378,8 +390,6 @@ kable(pvp_grads)
 #kable prints the information in the pvp_grads
 ```
 
-Here, we are splitting up the graphs over each individual predator species to look and see if there is a proportionality between the predator and prey masses for each specific predator species.
-
 We are wanting gradient $\neq 0$ to suggest dependence between the predator and prey mass, and specifically gradient $= 1$ to suggest that they are linearly proportional.
 
 The gradient $\neq 0 \pm$ (their standard error) for all of the predator species. Therefore, the assumption that the predator and prey masses are dependent on each other is a reasonable one and it holds for every predator species.
@@ -399,13 +409,14 @@ ggplot(data = renamed_df, aes(x=lppmr, colour=pred_species)) +
   labs(title = "Density plot of log(PPMR), weighted by biomass density of prey", 
        x="log(PPMR)", y="Biomass density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 5)) +
-  geom_density(aes(weight = prey_weight_g)) +
-  theme(legend.position="none")
+  geom_density(aes(weight = total_prey_weight)) +
+  theme(legend.position="none") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13), 
+        strip.text = element_text(size = 10))
 
 #using facet_wrap for the variable (pred_species) means the data is separated into individual plots for each predator species
 #geom_density means area under the curve = 1 (i.e. the graph is normalised)
-#weight=prey_weight_g means the points are 'weighted' by the column weight (biomass) of each individual prey
+#weight=total_prey_weight means the points are 'weighted' by the column weight (biomass) of each individual prey
 ``` 
 
 ## Weighted by number of prey
@@ -417,9 +428,9 @@ ggplot(data = renamed_df, aes(x=lppmr, colour=pred_species)) +
   labs(title = "Density plot of log(PPMR), weighted by number density of prey", 
        x="log(PPMR)", y="Number density of prey") +
   facet_wrap(~renamed_df$pred_species, scale="free_y") + 
-  theme(strip.text = element_text(size = 5)) +
   geom_density(aes(weight = no._prey_per_stmch)) +
-  theme(legend.position="none")
+  theme(legend.position="none", plot.title = element_text(size=15), 
+        axis.title = element_text(size=13), strip.text = element_text(size = 10))
 
 #weight=no._prey_per_stmch means the points are 'weighted' by the number of prey per observation
 ```
@@ -441,8 +452,8 @@ herringDF <- renamed_df %>%
 The curve with points weighted by the prey biomass is plotted in blue, and a normal curve (also weighted by prey biomasss) is plotted over the top as a dashed black line.
 
 ```{r Prey biomass weighting, messages=FALSE, warning=FALSE} 
-bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE)
-bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$prey_weight_g, na.rm = TRUE))
+bio_herringmean = weighted.mean(herringDF$lppmr, w = herringDF$total_prey_weight, na.rm = TRUE)
+bio_herringSD = sqrt(wtd.var(herringDF$lppmr, w = herringDF$total_prey_weight, na.rm = TRUE))
 
 #weighted.mean gives the arithmetic mean of log(PPMR), where datapoints are weighted by the prey weight of observations
 #similarly, wtd.rvar is the variance of log(PPMR), where the datapoints are also weighted by the prey weight
@@ -453,8 +464,8 @@ ggplot(data = herringDF, aes(x=lppmr)) +
           labs(title = "Density plot of log(PPMR) for Herring,
                weighted by prey biomass", 
                x="log(PPMR)",y="Biomass density of observations") +
-          geom_density(aes(weight = prey_weight_g), colour="red") + 
-          theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) + 
+          geom_density(aes(weight = total_prey_weight), colour="red") + 
+          theme(plot.title = element_text(size=15), axis.title = element_text(size=13)) +
           stat_function(fun = dnorm, 
                         linetype="dashed",
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD))) +
@@ -485,7 +496,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
                weighted by number of prey per observation",
                x="log(PPMR)", y="Number density of observations") +
           geom_density(aes(weight = no._prey_per_stmch), colour="green") + 
-          theme(plot.title = element_text(size=15), axis.text.y = element_text(size=10)) +
+          theme(plot.title = element_text(size=15), axis.title = element_text(size=13)) +
           stat_function(fun = dnorm, 
                         linetype = "dotted",
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD))) +
@@ -508,7 +519,7 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
                color="Line", linetype="Line") +
           geom_density(aes(weight = no._prey_per_stmch, colour="prey biomass",
                            linetype="prey biomass")) + 
-          geom_density(aes(weight = prey_weight_g, colour="number of prey per observation",
+          geom_density(aes(weight = total_prey_weight, colour="number of prey per observation",
                            linetype="number of prey per observation")) + 
           stat_function(fun = dnorm, 
                         args= with(herringDF, c(mean = no_herringmean, sd = no_herringSD)),
@@ -518,10 +529,14 @@ ggplot(data = herringDF, aes(x=lppmr), group=1) +
                         args= with(herringDF, c(mean = bio_herringmean, sd = bio_herringSD)),
                         aes(colour="prey biomass - normal curve",
                             linetype="prey biomass - normal curve")) +
-          theme(plot.title = element_text(size=20)) +
+          theme(plot.title = element_text(size=20), axis.title = element_text(size=13),
+                          legend.title = element_text(size=20), 
+                          legend.text = element_text(size=12),
+                          legend.position=c(1,1), 
+                          legend.justification=c(1,1)) +
           scale_color_manual(values=c('green', 'black', 'red', 'black')) +
           scale_linetype_manual(values = c("solid", "dashed", "solid", "dotted")) +
-          xlim(-5,25)
+          xlim(-5,30)
 
 #scale_color_manual manually adds a key to the graph to describe what the differently coloured lines represent
 #scale_linetype_manual manually adds a key to the graph to describe what the differently shaped lines represent (e.g. some lines are dotted, dashed or solid)
@@ -565,7 +580,8 @@ ggplot(data=renamed_df, aes(lpred_weight, lppmr, colour=pred_species)) +
        x="log(Predator mass)", y="log(PPMR)") + 
   stat_smooth (method='lm', colour="black") + 
   facet_wrap(~pred_species, scale="free_y") +
-  theme(legend.position="none")
+  theme(legend.position="none", plot.title = element_text(size=15), 
+        axis.title = element_text(size=13))
 ```
 
 Graphing $\log$(predator mass) v. $\log$(PPMR) for individual predator species to see if the predator mass related to the PPMR. 
@@ -636,19 +652,17 @@ ggplot(data=Herring_df, aes(lpred_weight, lppmr)) +
   labs(title = "log(PPMR) v. log(predator mass) plot: Herring", 
        x="log(Predator mass)", y="log(PPMR)", color="Weightings", linetype="Weightings") + 
   stat_smooth(aes(weight=no._prey_per_stmch, color='by number of prey in stomach',  
-                  linetype='by number of prey in stomach'), 
+              linetype='by number of prey in stomach'), 
               method='lm', se=FALSE) +
-  stat_smooth(aes(weight=prey_weight_g, color='by prey biomass', linetype='by prey biomass'), 
+  stat_smooth(aes(weight=total_prey_weight, color='by prey biomass', linetype='by prey biomass'), 
               method='lm', se=FALSE) +
   stat_smooth(aes(color='no weighting', linetype='no weighting'), method='lm', se=FALSE) +
-  stat_summary(fun.data=mean_se, geom="linerange") +
   scale_color_manual(values=c("green", "red", "blue")) +
   scale_linetype_manual(values = c("dashed", "dotted", "solid")) +
-  theme_classic()
+  theme_classic() + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 # se=FALSE doesn't add an area of error around the LOBF 
-# fun.data=mean_se calculates the mean and standard error for each point
-# linerange draws a point range between an upper and lower limit for the line, and the mean for the point (using the values calculated in 'fun.data=mean_se')
 
 #weighted by number of prey per observation
 perstmch_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df, 
@@ -656,7 +670,7 @@ perstmch_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df,
 
 #weighted by prey biomass
 biomass_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df, 
-                        weight=Herring_df$prey_weight_g)
+                        weight=Herring_df$total_prey_weight)
 
 #no weighting
 no_weighting <- lm(lppmr ~ lpred_weight, data = Herring_df)
@@ -715,7 +729,9 @@ ggplot(BlueW_df, aes(x = lpred_weight, y = lppmr)) +
   geom_point(size=0.5) +
   labs(title='The log(predator mass) against log(PPMR) graph, 
        with lines from the individual points to the line of best fit: Blue Whiting', 
-       x='log(predator mass)', y='log(PPMR)') 
+       x='log(predator mass)', y='log(PPMR)') + 
+  theme(plot.title = element_text(size=13), axis.title = element_text(size=13))
+
 #showing the residuals of each point to the line of best fit
 #geom_smooth() creates the regression line of the regression model from lm()
 #geom_segment() draws a line from each point to the regression line 
@@ -741,7 +757,8 @@ ggplot(BlueW_model, aes(x = .fitted, y = .resid)) +
        x='Fitted values of log(PPMR)', y='Residuals') +
   geom_smooth() + 
   theme_classic() +
-  theme(plot.title = element_text(size=15))
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
+
 #this plots the residuals of each data point, and adds a line across at res=0 to help visualise the data
 #.resid creates a list of the residuals of each individual data point
 ```
@@ -757,7 +774,8 @@ A QQplot (quantile-quantile plot) shows if two data sets come from the same dist
 ```{r qqplot, message=FALSE}
 qqnorm(res, xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - for the species Blue Whiting")
-qqline(res, col="blue")
+qqline(res, col="red")
+
 #plot a Q-Q plot to determine if the residuals follow a normal distribution
 #for a normal distribution, we would expect the data points to fall along roughly a straight line at a 45 degree angle
 ```
@@ -772,7 +790,8 @@ By plotting the density of the residuals, we see how frequently different residu
 ggplot(BlueW_model, aes(x = .resid)) +
   geom_density(colour="red") +
   labs(title='Density plot of the residuals: Blue Whiting', x='Residuals', y='Density') +
-  theme_classic()
+  theme_classic() + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 #plots the density of the residuals of the lppmr v lpred mass graph for Herring
 ```
@@ -792,7 +811,9 @@ ggplot(model, aes(x = .resid, color=renamed_df$pred_species)) +
   geom_density() + 
   facet_wrap(~renamed_df$pred_species, scales = "free_y") +
   labs(title="Density plot of the residuals", x='Residuals', y='Density') +
-  theme(legend.position="none")
+  theme(legend.position="none", plot.title = element_text(size=15), 
+          axis.title = element_text(size=13))
+
 #Plotting the density of the residuals for each predator species
 ```
 
@@ -825,9 +846,13 @@ Where:
 renamed_df %>% 
     ggplot(aes(x=lpred_weight, y=lppmr, group=pred_species, color=pred_species)) + 
     geom_point(size=0.1) + 
-    labs(x='log(predator mass)', y='log(PPMR)') +
-    theme_classic()
-#theme_classic() removes the grey background of the plot to make it easier to read
+    labs(x='log(predator mass)', y='log(PPMR)', 
+        title='A plot of the observations of log(PPMR) 
+                against the log(predator mass)') +
+    theme_classic() +
+    theme(plot.title = element_text(size=13), axis.title = element_text(size=13))
+
+#theme_classic() removes the grey background of the plot to make this plot easier to read
 ```
 
 This plot is very difficult to interpret, and the relationship between the $\log(\text{PPMR})$ and $\log(\text{predator mass})$ is difficult to visualise as there is not a single gradient for each predator species. To aid in our interpretation, We will add random effects to account for some of the variance in the $\log(\text{PPMR})$ values.
@@ -1032,7 +1057,9 @@ And:
 mackerel_df %>% 
   ggplot(aes(x = resid(a))) +
   geom_density(colour="blue") +
-  labs(title='Density plot of the residuals for model a: Mackerel', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for the model with ship name 
+                as a random effect: Mackerel', x='Residuals', y='Density') + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 
 #resid(a) gives the residuals of model a
 #The residuals are found by subtracting the fitted from the predicted values
@@ -1080,14 +1107,16 @@ And:
 ```{r}
 qqnorm(resid(b), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - mixed effect model with ship name and year")
-qqline(resid(b), col="blue")
+qqline(resid(b), col="red")
 ```
 
 ```{r}
 mackerel_df %>% 
   ggplot(aes(x = resid(b))) +
   geom_density(colour="red") +
-  labs(title='Density plot of the residuals for model b: Mackerel', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for the model with ship name and year
+                as random effects: Mackerel', x='Residuals', y='Density') + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
 ### With location
@@ -1121,14 +1150,16 @@ And:
 qqnorm(resid(c), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - mixed effect model with ship name, 
               year, and location")
-qqline(resid(c), col="blue")
+qqline(resid(c), col="green")
 ```
 
 ```{r}
 mackerel_df %>% 
   ggplot(aes(x = resid(c))) +
   geom_density(colour="green") +
-  labs(title='Density plot of the residuals for model c: Mackerel', x='Residuals', y='Density')
+  labs(title='Density plot of the residuals for the model with ship name, year, 
+                and location as random effects: Mackerel', x='Residuals', y='Density') + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
 ### Comparing
@@ -1235,7 +1266,6 @@ and the fixed effects coefficients are:
 
 Predator Species | Estimated gradient ($\alpha_p$)
 -------------   | ----------- 
-Blue Whiting    | \hl{?} 
 Cod	            | -0.2123354446   
 Common Dab      | -0.3095996172   
 European Hake   | -1.4461576412   
@@ -1259,7 +1289,7 @@ As seen in Section 8.3, a QQplot discusses whether or not the residuals of this 
 ```{r}
 qqnorm(resid(final), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
        main="Normal Q-Q plot of residuals - final mixed effect model")
-qqline(resid(final), col="blue")
+qqline(resid(final), col="orange")
 ```
 
 We see that the points generally lie close to this 45 degree line, although some extremely small or large residuals are not completely aligned. Due to this fairly close alignment, we can therefore claim that this suggests a normal distribution of residuals.
@@ -1274,8 +1304,13 @@ renamed_df %>%
               color="Line", linetype="Line") +
   stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
               args= with(final, c(mean = mean(resid(final)), sd(resid(final))))) +
-  scale_color_manual(values=c('red', 'black')) +
-  scale_linetype_manual(values = c("solid", "dashed"))
+  scale_color_manual(values=c('orange', 'black')) +
+  scale_linetype_manual(values = c("solid", "dashed")) + 
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13),
+                          legend.title = element_text(size=15), 
+                          legend.text = element_text(size=12),
+                          legend.position=c(1,1), 
+                          legend.justification=c(1,1))
 ```
 
 Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals, we see that the residuals are essentially normally distributed, but with a greater density of points for which the residuals $= 0$. Therefore, this is strong evidence that the residuals are normally distributed, and hence that there is some form of linear relationship between the $\log$(PPMR) and $\log$(predator mass). This then suggests that we can these mixed effects models, and therefore that our final mathematical model is appropriate for this data set.
@@ -1291,7 +1326,8 @@ renamed_df %>%
   labs(title='Density plot of the residuals - separated over species',
               x='Residuals', y='Density') +
   facet_wrap(~pred_species) +
-  theme(legend.position="none")
+  theme(legend.position="none", plot.title = element_text(size=15), 
+              axis.title = element_text(size=13))
 ```
 
 For a predator which shows a very flat-looking density of residuals (such as Horse Mackerel in Figure), this means that the residuals are very scattered and display heteroscedastic behaviour. This also suggests that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out and do not show a clear linear relation. Hence, we find that there are observations with a range of $\log$(PPMR) values for each $\log$(predator mass). Transforming away from the $\log$ of the axes, we can therefore claim that predators with a flat-looking density of residuals have many values of PPMR for a each predator mass. 
@@ -1314,7 +1350,8 @@ ggplot(mackerel_df, aes(x=prey_type, fill=prey_type)) +
                     pattern_color = "white",
                     pattern_fill = "black",
                     aes(pattern = prey_type, pattern_angle = prey_type)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.title = element_text(size=13),
+                    legend.position="none") +
   labs(x="Prey type", y="Number of Observations")
 ```
 
@@ -1325,7 +1362,9 @@ Mackerel mostly eat Zooplankton and prey belonging to the group `other'.
 ```{r}
 ggplot(mackerel_df, aes(x=lppmr)) +
   geom_density(aes(weight = no._prey_per_stmch), color="lightseagreen") +
-  labs(x="log(PPMR)", y="Number density of observations")
+  labs(x="log(PPMR)", y="Number density of observations") +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13)) + 
+  theme_classic()
 ```
 
 Mackerel have a wide distribution of $\log$(PPMR) values, suggesting that there is a wide range of prey masses consumed by predator.
@@ -1337,7 +1376,8 @@ mackerel_df %>%
   ggplot(aes(x = resid(c))) +
   geom_density(colour="lightseagreen") +
   labs(x='Residuals', y='Density') +
-  theme_classic()
+  theme_classic() +
+  theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
 The residuals are fairly widely distributed. This means that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out, and therefore there is a wide distribution of $\log$(PPMR) values across the species Mackerel. This then suggests that a predator such as Mackerel feeds on a wide distribution of prey masses.
