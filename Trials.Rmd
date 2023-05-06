@@ -249,13 +249,11 @@ type1 <- length((filter(renamed_df, haul_id_short=='END04'))$haul_id_short)
 
 type2 <- length((filter(renamed_df, haul_id_short=='CLION09' | haul_id_short=='LUC' | haul_id_short=='UNITY' | haul_id_short=='CLYDE'))$haul_id_short)
 
-type3 <- length((filter(renamed_df, haul_id_short=='BEAVER'|haul_id_short=='BRUCELLA'|haul_id_short=='BULLEN'|haul_id_short=='CIROL04'|haul_id_short=='CIROL10'|haul_id_short=='CLION03'|haul_id_short=='CLION07'|haul_id_short=='CLION12'|haul_id_short=='COREL02'|haul_id_short=='COREL06'|haul_id_short=='CORY04'|haul_id_short=='CYPRIS'|haul_id_short=='END02'|haul_id_short=='END12'|haul_id_short=='HEINCKE147'|haul_id_short=='HIDDINK'|haul_id_short=='OITHONA'|haul_id_short=='STRANDLINE'|haul_id_short=='TELLINA'))$haul_id_short)
-
 type4 <- length((filter(renamed_df, haul_id_short=='EXCmacDATSTO815'|haul_id_short=='Excmacdatsto815error'))$haul_id_short)
 
 ship_erroneous <- data.frame("Graph_Type"=c("y proportional to exp(-x)", "Single prey mass"
-                                      , "Same number of prey per observation", "Same data"),
-                        "Number_of_observations"=c(type1, type2, type3, type4))
+                                            ,  "Same data"),
+                        "Number_of_observations"=c(type1, type2, type4))
 #creates a data frame which shows the number of observations of each error 'type'
 
 kable(ship_erroneous)
@@ -263,13 +261,13 @@ kable(ship_erroneous)
 ```
 
 
-In total, 35445 out of the total 267431 observations lie within these potentially erroneous groups. This is:
+In total, 8265 out of the total 267431 observations lie within these potentially erroneous groups. This is:
 $$
-  \frac{35445}{267431} \times 100 = 13.25389 \%
+  \frac{8265}{267431} \times 100 = 3.090517 \%
 $$
 
 
-This means that approximately $13 \%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that any results are as reliable as possible.
+This means that approximately $3.1\%$ of the data set comes from potentially unreliable sources. Though we will not remove or alter the data set to account for these potentially erroneous data points in this project, for further analysis it may be sensible to remove the data points these six ships recorded so that any results are as reliable as possible.
 
 # Prey and predator mass relation
 
