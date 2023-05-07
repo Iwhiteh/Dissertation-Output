@@ -100,11 +100,11 @@ renamed_df <- renamed_df[renamed_df$pred_species %in% species_list, ]
 
 # Introduction
 
-This data set is formed from recordings taken by multiple ships between the years 1886-2016. We chose to focus on 16 predator species, as these are the same species analysed in a Mizer model which this project will feed into. It is important to note that the Mizer model also includes the predator species `Boarfish', however, there are a very limited number of observations for this species in the provided data set, so any analysis of Boarfish cannot be relied upon.
+This data set is formed from recordings taken by multiple ships between the years 1886-2016. We chose to focus on 16 predator species, as these are the same species analysed in a Mizer model which values from this project will inform. It is important to note that the Mizer model we are looking at also includes the predator species `Boarfish', however, there are a very limited number of observations for this species in the provided data set, so any analysis of Boarfish cannot be relied upon (and therefore we do not consider observations of the predator species Boarfish).
 
-Fish were taken from some location, and their individual stomach contents recorded. Prey of (roughly) the same size found in a single predator's stomach were recorded as part of a single observation. This gives the number of prey that make up a single observation for some single predator stomach, and is called 'no._prey_per_stmch'.
+Fish were taken from some location, and their individual stomach contents recorded. Prey of the same predator species and (roughly) the same size found in a single predator's stomach were recorded a single observation. We call this number of prey that make up a single observation for some predator stomach 'no._prey_per_stmch'.
 
-Using similar logic,'total_prey_weight' is the total weight of prey in a single observation, and 'indiv_prey_weight' is then the approximate weight of one single prey individual found in the stomach, found using:
+Using similar logic,'total_prey_weight' is the total biomass of prey from a single observation, and 'indiv_prey_weight' is the approximate weight of one prey individual found in the stomach, defined using:
 
 $$
   \text{indiv_prey_weight} = \frac{\text{total_prey_weight}}{\text{no._prey_per_stmch}}
@@ -112,8 +112,8 @@ $$
 
 There are some other column names which are useful to note:
 
-* ices_rectangle accounts for the location of observations, where each area that the points are sampled in is split up into a number of smaller rectangles and each is given a unique name
-* haul_id is a identification tag given to each individual ship which recorded observations
+* ices_rectangle accounts for the location of observations, where each area that the points are sampled in is split up into a number of smaller rectangles and each of these rectangles are given a unique name
+* haul_id is an identification tag given to each ship which recorded observations
 * The weight of each individual prey (indiv_prey_weight) and each predator (pred_weight_g) are measured in grams
 * PPMR stands for 'predator prey mass ratio', and is calculated using:
 
@@ -148,8 +148,8 @@ These are individual bar charts showing the distribution of the type of prey eac
 The prey types are:
 
 * Benthos: organisms that live on/near the bottom of a body of water
-* Fish: aquatic, craniate (have a skull), gill-bearing animals that lack limbs with digits (i.e. their limbs don't have toes or fingers). Fish are a type of nekton, but for this data set fish are recorded as separate entities.
 * Nekton: the actively swimming aquatic organisms that can resist a strong current of water (the classification of nekton for this data set excludes any fish)
+* Fish: animals which are aquatic, craniate (have a skull), have gills, and have animals limbs without toes or fingers. Fish are a type of nekton, but for this data set fish are recorded as separate entities.
 * Zooplankton: animal types of plankton (where plankton are aquatic organisms that are unable to swim effectively against currents)
 * Other: miscellaneous types of aquatic animals that don't fit into the other categories, including sand, debris, crustaceans and unclassified digested remains
 
@@ -175,6 +175,8 @@ This plot shows that different predator species consume differently sized distri
 * Cod
 * Sprat, and 
 * Megrim
+
+Therefore, we can see that each predator species consumes prey in a different way and in different distributions.
 
 # Most common prey masses
 
@@ -282,7 +284,7 @@ where m is the gradient of the slope and c is the y-intercept (thinking of this 
 Taking the exponential of both sides,
 
 $$
-  \text{prey mass} = \exp({{m}\times{\log(\text{predator mass})}}) + \log(D) ,
+  \text{prey mass} = \exp({m{\log(\text{predator mass})}}) + \log(D) ,
 $$
 where $\log(D) = c$. 
 
@@ -292,7 +294,7 @@ $$
   \text{prey mass} = \text{predator mass}^m \times D
 $$
 
-Hence, we want $m = 1$ to show that predator mass is linearly proportional to prey mass (as expected). However, to simply show that the two variables are dependent on each other, we are looking for instances where $m \neq 0$
+Hence, we want $m = \pm 1$ to show that predator mass is linearly proportional to prey mass (as expected). However, to simply show that the two variables are dependent on each other, we are looking for instances where $m \neq 0$.
 
 ```{r log(prey mass) v. log(pred mass), message=FALSE}
 #message=FALSE means some output messages aren't printed in the knitted HTML document
@@ -328,9 +330,9 @@ cat("Slope of the log(prey mass) v. log(predator mass) line of best fit:",
 # The first item of the array gives out the y-intercept of the line, and the second item of the array is the gradient
 ```
 
-For this graph, the slope is equal to $0.6712536 \pm 0.001915732$. This is not equal to $1$, and therefore this plot supports the assumption that the predator and prey masses are dependent on each other in some way.
+Also, the gradient of the slope is equal to $0.6712536 \pm 0.001915732$. This is not equal to $0$, and therefore this plot supports the assumption that the predator and prey masses are dependent on each other in some way. 
 
-For this graph, the most dense area (the area with the greatest number of points in a single hexagonal 'bin') is purple, and the least dense area is in yellow. Therefore, we can see that there are lots of observations around the point where $\log(\text{predator mass}) = 6$ and $\log(\text{prey mass}) = 0$, and near where $\log(\text{predator mass}) = -1$ and $\log(\text{prey mass}) = -5$. However, we can see that the line of best fit (in blue) isn't plotted directly through these most dense areas, and therefore we can't claim that this line of best fit is very reliable.
+However, for this graph the most dense area (the area with the greatest number of points in a single hexagonal 'bin') is purple, and the least dense area is coloured in yellow. Therefore, we can see that there are lots of observations around the point where $\log(\text{predator mass}) = 6$ and $\log(\text{prey mass}) = 0$, and near where $\log(\text{predator mass}) = -1$ and $\log(\text{prey mass}) = -5$. Therefore, the line of best fit (in blue) isn't plotted directly through these most dense areas, and thus we can't claim that this line of best fit is very reliable.
 
 This graph is plotted over the entire data set and includes values from all of the available predator species. Instead, we will separate the plots by predator species to see if there is some proportionality between the predator and prey mass for each specific species. 
 
@@ -388,11 +390,11 @@ kable(pvp_grads)
 #kable prints the information in the pvp_grads
 ```
 
-We are wanting gradient $\neq 0$ to suggest dependence between the predator and prey mass, and specifically gradient $= 1$ to suggest that they are linearly proportional.
+We are wanting gradient $\neq 0$ to suggest dependence between the predator and prey mass, and specifically gradient $= \pm 1$ to suggest that they are linearly proportional.
 
 The gradient $\neq 0 \pm$ (their standard error) for all of the predator species. Therefore, the assumption that the predator and prey masses are dependent on each other is a reasonable one and it holds for every predator species.
 
-Having proportionality between the predator and prey masses allows us to use the PPMR (predator prey mass ratio) for further analysis in this project.
+Having proportionality between the predator and prey masses shows us that using the PPMR (predator prey mass ratio) is a reasonable decision when using this data set.
 
 #  PPMR for individual species
 
@@ -1302,10 +1304,10 @@ We see that the points generally lie close to this 45 degree line, although some
 ```{r}
 renamed_df %>% 
   ggplot(aes(x = resid(final))) +
-  geom_density(aes(linetype="line", color="line")) +
+  geom_density(aes(linetype="Data", color="Data")) +
   labs(title='Density plot of the residuals', x='Residuals', y='Density', 
               color="Line", linetype="Line") +
-  stat_function(fun = dnorm, aes(linetype = "normal", color="normal"),
+  stat_function(fun = dnorm, aes(linetype = "Normal", color="Normal"),
               args= with(final, c(mean = mean(resid(final)), sd(resid(final))))) +
   scale_color_manual(values=c('orange', 'black')) +
   scale_linetype_manual(values = c("solid", "dashed")) + 
@@ -1313,7 +1315,8 @@ renamed_df %>%
                           legend.title = element_text(size=15), 
                           legend.text = element_text(size=12),
                           legend.position=c(1,1), 
-                          legend.justification=c(1,1))
+                          legend.justification=c(1,1),
+                        )
 ```
 
 Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals, we see that the residuals are essentially normally distributed, but with a greater density of points for which the residuals $= 0$. Therefore, this is strong evidence that the residuals are normally distributed, and hence that there is some form of linear relationship between the $\log$(PPMR) and $\log$(predator mass). This then suggests that we can these mixed effects models, and therefore that our final mathematical model is appropriate for this data set.
