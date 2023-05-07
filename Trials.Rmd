@@ -398,11 +398,11 @@ Having proportionality between the predator and prey masses shows us that using 
 
 #  PPMR for individual species
 
-Here, we are looking for the most common log(PPMR) value for each individual species. This will be found by plotting the density of the log(PPMR) observations, and weighting these observations based on two different variables. By assuming that these are normally distributed relations, there should be a 'peak' point of log(PPMR) which is where the most common log(PPMR) value lies. We assume this will be unique for different predator species, i.e. each predator has a preferred PPMR value, and hence each predator species has a preferred prey size relative to the mass of the predator that it most frequently consumes.
+Here, we are looking for the most common log(PPMR) value for each individual species. This will be found by plotting the density of the log(PPMR) observations, and weighting these observations based on two different variables. By assuming that these are normally distributed relations, there should be a 'peak' point of log(PPMR) which is where the most commonly seen log(PPMR) value lies. We assume this will be unique for each predator species, i.e. that each predator has a preferred PPMR value, and hence each predator species has a preferred prey size relative to the mass of the predator that it most frequently consumes.
 
 ##  Weighted by prey biomass
 
-These plots are weighted by the prey biomass. This means that we are looking at the distribution of prey biomass across values of log(PPMR), so observations are counted up according to their biomass. This means that a single observation which includes prey of a large biomass will represent a large density, and a single observation of prey of a small biomass will be shown as having a small density,
+These plots are weighted by the prey biomass. This means that we are looking the biomass density of $\log$(PPMR), so observations are counted up according to their biomass. This means that a single observation which includes prey of a large biomass will represent a large density, and a single observation of prey of a small biomass will be shown as having a small density,
 
 ```{r ave PPMR biomass}
 ggplot(data = renamed_df, aes(x=lppmr, colour=pred_species)) + 
@@ -556,18 +556,18 @@ and
 The mathematics of shifted means for these different weightings is:
 
 $$
-  \text{weighted mean}_{\text{expected prey biomass}} = \text{weighted mean}_{\text{no. of prey }} - (\text{standard deviation}_{\text{no. of prey }})^2
+  (\text{predicted weighted mean})_{\text{prey biomass}} = (\text{weighted mean})_{\text{no. of prey }} - (\text{standard deviation}_{\text{no. of prey }})^2
 $$
 
 Hence, the expected result is:
 
 $$
-  \text{weighted mean}_{\text{expected prey biomass}} = 13.68691  - (2.473435)^2 = 7.569029
+  (\text{predicted weighted mean})_{\text{prey biomass}} = 13.68691  - (2.473435)^2 = 7.569029
 $$
 
-The $\text{weighted mean}_{\text{expected prey biomass}}$ lies within the standard error ($\pm 2.370106$) of the prey biomass weighted mean as given by the plot above. Therefore, the shifting mean equations are relatively accurate for this data set with these weightings.
+The $(\text{predicted weighted mean})_{\text{prey biomass}}$ lies within the standard error ($\pm 2.370106$) of the actual prey biomass weighted mean as given by the plot above. Therefore, the shifting mean equations are relatively accurate for this data set with these weightings.
 
-So, we can continue with the assumption that there is a difference in the mean of $\log$(PPMR) of the square of the standard deviation when we weight by number of prey per observation and prey biomass.
+Because we began with an assumption that $\log$(PPMR) is a normally distributed variable, the accuracy in weighted mean calculation under this assumption then supports the idea that the data can be plotted according to normal distributions. Therefore, we can claim that the $\log$(PPMR) is a normally distributed variable, allowing us to compare the behaviour of $\log$(PPMR) to a normal distribution in later analysis.
 
 # Predator mass against PPMR
 
@@ -699,13 +699,15 @@ cat("With no weightings in the calculations:",
 
 Looking at just the predator species 'Herring'. There are three LOBF (line of best fit), weighted by different variables, each with individual values for their gradient.
 
-For observations of the predator species Poor Cod the gradient is equal to $1$ (to 1 significant to figure and $\pm$ (their standard error)) when the line of best fit is weighted by either the prey biomass or the number of prey in the stomach. This is compelling evidence for some dependency between the PPMR and the predator mass. 
+For observations of the predator species Herring, the gradient is equal to $1$ (to 1 significant to figure and $\pm$ (their standard error)) when the line of best fit is weighted by either the prey biomass or the number of prey in the stomach. This is compelling evidence for some dependency between the PPMR and the predator mass (and it appears that this is linear). 
 
 ## Residuals of the log(predator mass) against log(PPMR) plot {.tabset}
 
-We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are dependent on one another in some way, hence the predator mass is dependent on the PPMR.  
+We are now proceeding with the idea that the $\log(\text{predator mass})$ and $\log(\text{PPMR})$ are dependent on one another in some way, and hence the predator mass is dependent on the PPMR.  
 
-`Heteroscedasticity' is when the residuals (error terms) are unequally scattered. However, residuals with a constant variance will show a density that is approximately normally distributed. Therefore, if residuals do not show a normal distribution (and instead show heteroscedasticity), then it is unclear whether or not the method of a linear relationship is appropriate to fit the data set.
+Residuals with a constant variance will show a density that is approximately normally distributed. This also means that the residuals all lie close to the line of best fit and therefore the data is strongly linearly related.
+
+`Heteroscedasticity' is when the residuals (error terms) are unequally scattered throughout a plot. Therefore, if residuals do not show a normal distribution (and instead show heteroscedasticity), then it is unclear whether or not the method of a linear relationship is appropriate to fit the data set.
 
 For the arbitrarily selected predator species Blue Whiting, we get the following plots which all discuss the idea of normally distributed residuals.
 
@@ -739,11 +741,11 @@ ggplot(BlueW_df, aes(x = lpred_weight, y = lppmr)) +
 
 This plot shows how distributed the points are in comparison to the line of best fit. For a 'well fitting' line of best fit, we would expect the residuals to be approximately normally distributed. As discussed earlier, the residual of a point is equal to:
 $$
-    \text{Residual} = \text{actual value} - \text{predicted/fitted value} ,
+    \text{residual} = \text{actual value} - \text{predicted/fitted value} ,
 $$
 where the predicted/fitted value is equal to the value as predicted by the line of best fit.
 
-It is difficult to understand how the residuals are distributed from this plot, so instead we will consider plots of the residuals against the fitted values, of the density of the residuals and of a QQPlot.
+It is difficult to understand how the residuals are distributed from this plot, so instead we will consider plots of the residuals against the fitted values, of the density of the residuals, and a QQPlot.
 
 ### Residuals v. fitted values
 
@@ -798,7 +800,7 @@ ggplot(BlueW_model, aes(x = .resid)) +
 
 For observations from the predator species of Blue Whiting, we can see that the density of residuals looks approximately normally distributed, with a `peak' near the centre and densities which trail off towards $0$ either side of this peak. We can therefore claim that this normal distribution suggests a linear relation between the $\log$(PPMR) and the $\log$(predator mass), and therefore that the PPMR and predator mass are dependent on each other in some manner.
 
-However, this plot shows two clear peaks, located at roughly $-1.5$ and $1$, which is not expected of a normal distribution curve. This is potentially indicative of some source of variance in the data which is creating two peaks instead of one. To investigate this variance, we choose to plot mixed effects models (as discussed later in Section 9).
+However, this plot} appears to show two clear peaks of density, located where the residual $= -1.5$ and $1$. Two separated peaks of density is not what is expected from a normal distribution curve. This is potentially due to some source of variance in the data which is creating these two density peaks instead of one. To further investigate this variance, I chose to plot mixed effects models (as discussed later in Sections 9).
 
 ## Residual plots for the individual predator species
 
@@ -819,7 +821,7 @@ ggplot(model, aes(x = .resid, color=renamed_df$pred_species)) +
 
 From these plots, we can see that most of the species show roughly a normal distribution of residuals, with a strong centrally located `peak' and densities which tail slowly down to $0$ at either side of this peak. This then suggests that the data set can be linearly modelled.
 
-However, similar to Blue Whiting, many of these predator species show multiple peaks in their densities. Therefore, we can suggest that there is some amount of variance in the data set which causes this multiple-peak behaviour.  
+However, similar to Blue Whiting, many of these predator species show multiple peaks in their densities. Therefore, we can suggest that there is some amount of variance which affects many predator species in the data set and causes this multiple-peak behaviour.  
 
 To continue this analysis, we use a different model (a mixed effects model) to fit this data set to in order to more accurately approximate certain parameters in the variable relationships (and to account for some variance caused by certain factors in the data set).
 
@@ -831,7 +833,7 @@ We will now fit the data to a mixed effects model, which allows us to account fo
 
 ### Basic Linear model
 
-This is mathematically represented by:
+A simple linear model is mathematically represented by:
 $$
   \log(\text{PPMR})_i = \beta_1 \times \log(\text{predator mass})_i + \beta_0
 $$
@@ -879,9 +881,9 @@ Where:
 * $y$ is the index of the year
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0y}$ is the random intercept term for year $y$
-(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0y} \sim (0, \sigma^2_{A[00]})$)).
+(where $\alpha_{0j}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0y} \sim \mathcal{N} (0, \sigma^2_{A[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
-* $\epsilon_{iy}$ is the error term, which describes the residuals of the model
+* $\epsilon_{iy}$ is the error term, which describes the residuals of the model (where $\epsilon_{ij} \sim \mathcal{N} (0, \sigma^2_{\epsilon})$)
 
 ```{r first}
 one <- lmer(lppmr ~ lpred_weight + (1|year), data = renamed_df, REML=FALSE)
@@ -940,7 +942,7 @@ Where:
 * $\beta_{0}$ is the overall intercept term
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1y}$ is the slope term that's dependent on the random effect (the year)
-(where $\alpha_{1y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[10]}$ (i.e. $\alpha_{1y} \sim (0, \sigma^2_{A[10]})$)).
+(where $\alpha_{1y} \sim \mathcal{N} (0, \sigma^2_{A[10]})$).
 * $\epsilon_{iy}$ is the error term, which describes the residuals of the model
 
 ```{r second}
@@ -988,7 +990,7 @@ Where:
 * $y$ is the index of the year
 * $\beta_{0}$ is the overall intercept term
 * $\alpha_{0j}$ is the random intercept term for predator species $j$
-(where $\alpha_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{A[00]}$ (i.e. $\alpha_{0y} \sim (0, \sigma^2_{A[00]})$)).
+(where $\alpha_{0y} \sim \mathcal{N} (0, \sigma^2_{A[00]})$).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $\alpha_{1y}$ is the slope term that's dependent on the random effect (the year)
 * $\epsilon_{iy}$ is the error term, which describes the residuals of the model
@@ -1014,13 +1016,18 @@ anova(one,two,three)
 #comparing the three models
 ```
 
-We can see that the third trial has a significantly smaller BIC value, and hence we will choose to continue using models which have slopes and intercepts that vary according to the fixed effect.
+We can see that the third trial has a significantly smaller BIC value, and hence we will choose to continue using models which have slopes and intercepts for their random effects which vary according to the fixed effect.
 
 ## Trialing different models - only for Mackerel {.tabset}
 
 Here, all the random effects are modeled with a randomly distributed slope and intercept for each level of a grouping.
 
 ### With ship name
+
+In this model,
+
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name
 
 ```{r trial a}
 mackerel_df <-  renamed_df %>% filter(pred_species == fixed("Mackerel"))
@@ -1043,15 +1050,10 @@ Where:
 * $h$ is the index of the different haul_id name
 * $\beta_{0}$ is the overall intercept term
 * $H_{0h}$ is the random intercept term for haul_id $h$
-(where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{H[00]}$ (i.e. $H_{0h} \sim (0, \sigma^2_{H[00]})$)).
+(where $H_{0h}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{H[00]}$ (i.e. $H_{0h} \sim \mathcal{N} (0, \sigma^2_{H[00]})$)).
 * $\beta_{1}$ is the slope term that's dependent on the fixed effect (the predator mass)
 * $H_{1h}$ is the slope term that's dependent on the random effect (the haul_id)
 * $\epsilon_{ih}$ is the error term, which describes the residuals of each point
-
-And:
-
-* Fixed effects: $\log$(predator mass)
-* Random effects: ship name
 
 ```{r}
 qqnorm(resid(a), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
@@ -1079,6 +1081,11 @@ We can also plot the density of the residuals of this model. Normally distribute
 
 ### With year
 
+This model has:
+
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name, year
+
 ```{r trial b}
 b <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year), 
           data = mackerel_df, REML=FALSE)
@@ -1096,13 +1103,8 @@ Where:
 
 * $y$ is the index of the different year the observation was taken
 * $Y_{0y}$ is the random intercept term for haul_id $h$
-(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{Y[00]}$ (i.e. $Y_{0y} \sim (0, \sigma^2_{Y[00]})$)).
+(where $Y_{0y}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{Y[00]}$ (i.e. $Y_{0y} \sim \mathcal{N} (0, \sigma^2_{Y[00]})$)).
 * $Y_{1y}$ is the slope term that's dependent on the random effect (the haul_id)
-
-And:
-
-* Fixed effects: $\log$(predator mass)
-* Random effects: ship name, year
 
 ```{r}
 qqnorm(resid(b), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
@@ -1119,9 +1121,14 @@ mackerel_df %>%
   theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
-We see that the points lie closer to the expected 45 degree line in the QQPlot and the residuals appear slightly more clustered around a central point. This is all suggestive of this model fitting in a more preferable way.
+We see that the points lie closer to the expected 45 degree line in the QQPlot and the residuals appear slightly more clustered around a central point. This is all suggestive of this model fitting in a more preferable way compared to only using the ship name as a random effect.
 
 ### With location
+
+This is a model with the variables:
+
+* Fixed effects: $\log$(predator mass)
+* Random effects: ship name, year, ices_rectangle
 
 ```{r trial c}
 c <- lmer(lppmr ~ lpred_weight + (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
@@ -1140,13 +1147,8 @@ Where:
 
 * $r$ is the index of the different ices_rectangle term
 * $R_{0r}$ is the random intercept term for the ices_rectangle $r$
-(where $R_{0r}$ is normally distributed with a mean of $0$ and a standard deviation $\sigma_{R[00]}$ (i.e. $R_{0r} \sim (0, \sigma^2_{R[00]})$)).
-* $R_{1r}$ is the slope term that's dependent on the random effect (the haul_id)
-
-And:
-
-* Fixed effects: $\log$(predator mass)
-* Random effects: ship name, year, ices_rectangle
+($R_{0r} \sim \mathcal{N} (0, \sigma^2_{R[00]})$).
+* $R_{1r}$ is the slope term that's dependent on the random effect (the ices_rectangle) (with ($R_{1r} \sim \mathcal{N} (0, \sigma^2_{R[1r]})$).)
 
 ```{r}
 qqnorm(resid(c), xlab = "Theoretical Residuals", ylab = "Sample Residuals",
@@ -1192,6 +1194,18 @@ The BIC value is the smallest when all three random effects are considered, and 
 
 The third model (with ship name, year and location as random effects) appears to represent the data the most effectively. We now want to consider a mixed effects model over all the predator species (not just Mackerel). Therefore, we choose to continue with model c (with random effects:ship name, year, ices_rectangle), and a fixed effect of predator species to allow us to make individual analysis for each unique predator species.
 
+To note, the coefficients of each random effect are distributed according to: 
+$\sigma_{H_{[0h]}}$  $sim \mathcal{N} (0, \sigma^2_{H_{[0h]}})$. However, each group $H$ only has a single standard distribution across every subgroup $h$.
+
+### Mathematical representation
+
+Using the variables below,
+
+* Fixed effects: $\log$(predator mass), predator species
+* Random effects: ship name, year, ices_rectangle
+
+The complete output for the final model is:
+
 ```{r final model}
  final <- lmer(lppmr ~ lpred_weight + pred_species + 
             (1+lpred_weight|haul_id_short) + (1+lpred_weight|year) +
@@ -1200,8 +1214,6 @@ The third model (with ship name, year and location as random effects) appears to
 
 summary(final)
 ```
-
-### Mathematical representation
 
 Mathematical representation:
 $$
@@ -1228,8 +1240,6 @@ Where:
 * $\alpha_p$ is the slope term which is dependent on the predator species (and each predator species $p$ has a unique slope term)
 * $\epsilon_{ihyr}$ is the error term, which describes the residuals of each point
 
-(where each random intercept term and the residuals are normally distributed with a mean of $0$ and a standard deviation $\sigma_{[00]}$ (i.e. $sim (0, \sigma^2_{[00]})$)).
-
 and,
 
 $$
@@ -1246,14 +1256,9 @@ $$
     \end{cases}
 $$
 
-So, 
-
-* Fixed effects: $\log$(predator mass), predator species
-* Random effects: ship name, year, ices_rectangle
-
 ### Values of the model
 
-This model has the following variables:
+This model has the following values of coefficients:
 
 Variable name |  Meaning            | Value   
 ------------- | -----------         | ---------    
@@ -1287,6 +1292,8 @@ Sole            | 0.6118634430
 Sprat           | 0.9023672482   
 Whiting         | -0.4030090827 
 
+When the mixed effects model was applied, I found that there was no estimated gradient value for the predator species `Blue Whiting`. This may be due to some amount of overfitting of the model, or because observations of Blue Whiting only occurred in a limited number of year and ship name subgroups. For conciseness in this project we will therefore ignore the lack of a gradient value for `Blue Whiting` and continue with gradient values only for the remaining 15 predator species
+
 ### QQplot
 
 As seen in Section 8.3, a QQplot discusses whether or not the residuals of this model are normally distributed. In order to fit a mixed effects model, we must have an approximately linear relation between the two axes.
@@ -1319,7 +1326,7 @@ renamed_df %>%
                         )
 ```
 
-Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals, we see that the residuals are essentially normally distributed, but with a greater density of points for which the residuals $= 0$. Therefore, this is strong evidence that the residuals are normally distributed, and hence that there is some form of linear relationship between the $\log$(PPMR) and $\log$(predator mass). This then suggests that we can these mixed effects models, and therefore that our final mathematical model is appropriate for this data set.
+Here, we have added a normal curve (in dotted black) to the plot using the mean and standard deviation as calculated from the model. Comparing this normal curve to the density of residuals, we see that the residuals are essentially normally distributed, but with a greater density of points for which the residuals $= 0$. Therefore, this is strong evidence that the residuals are normally distributed, and hence that there is some form of linear relationship between the $\log$(PPMR) and $\log$(predator mass). This then suggests that we can use these mixed effects models (as they are an advancement of alinear model), and therefore that our final mathematical model is appropriate for this data set.
 
 ### Separated by predator species
 
@@ -1386,4 +1393,4 @@ mackerel_df %>%
   theme(plot.title = element_text(size=15), axis.title = element_text(size=13))
 ```
 
-The residuals are fairly widely distributed. This means that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out, and therefore there is a wide distribution of $\log$(PPMR) values across the species Mackerel. This then suggests that a predator such as Mackerel feeds on a wide distribution of prey masses.
+The residuals are fairly widely distributed. This means that the observed points of the fitted $\log$(PPMR) against $\log$(predator mass) plot are very spread out, and therefore there is a wide distribution of $\log$(PPMR) values across the species Mackerel. This then suggests that a predator such as Mackerel feeds on a wide distribution of prey masses relative to the mass of the predator.
