@@ -1,5 +1,5 @@
 ---
-title: "Predator-Prey Mass Ratios in Aquatic Ecosystems and Fitting Mixed Effects Models to Account to a Given Data Set"
+title: "Predator-Prey Mass Ratios in Aquatic Ecosystems and Fitting Mixed Effects Models to a Given Data Set"
 author: "Imogen Whitehead"
 output:
   html_document:
